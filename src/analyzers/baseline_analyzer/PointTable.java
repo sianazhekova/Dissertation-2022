@@ -131,16 +131,9 @@ public class PointTable implements Table, Cloneable {
     }
 
     public void mergeAddressLine(Long refAddress, List<TableEntryPC> listToMerge) {
-        if (!this.table.containsKey(refAddress)) {
-
-        }
-
-
-    }
-
-    public void accNewKilledBits(Long keyAddress, Set<Long> writes) {
-
-
+        List<TableEntryPC> updatedList = this.table.getOrDefault(refAddress, new LinkedList<>());
+        updatedList.addAll(listToMerge);
+        this.table.put(refAddress, updatedList);
     }
 
     public void clear() {

@@ -3,13 +3,12 @@ package analyzers.baseline_analyzer;
 // This will be for storing entries in PointTables
 
 public class TableEntryPC {
-    //private PCPair pairPC;
-    private PointPC point;
+    private PCPair pairPC;
     private long tripCount;  // 2 ways of implementing this - either via Time module to record timestamps or count number of non-START/END events
     private int numOccurrence;
 
     public long getAddressPC() {
-        return point.getPCPair().getPC();
+        return pairPC.getPC();
     }
 
     public long getTripCount() {
@@ -21,7 +20,7 @@ public class TableEntryPC {
     }
 
     public MemoryAccess getMemAccessType() {
-        return point.getPCPair().getMemAccessType();
+        return pairPC.getMemAccessType();
     }
 
     public void setTripCount(long trips) {

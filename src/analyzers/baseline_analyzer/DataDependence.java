@@ -3,6 +3,8 @@ package analyzers.baseline_analyzer;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
+import javax.xml.crypto.Data;
+
 public enum DataDependence {
     DEPNONE (-1),
     WR (0),
@@ -22,6 +24,18 @@ public enum DataDependence {
 
     public int getDepID() {
         return this.depID;
+    }
+
+    public static DataDependence getDependence( MemoryAccess firstAccess, MemoryAccess secondAccess) {
+        if (firstAccess == MemoryAccess.READ && secondAccess == MemoryAccess.WRITE) {
+            return WR;
+        } else if (firstAccess == MemoryAccess.WRITE && secondAccess == MemoryAccess.WRITE) {
+            return WW;
+        } else if (firstAccess == MemoryAccess.WRITE && secondAccess == MemoryAccess.READ) {
+            return RW;
+        } else {
+            return DEPNONE;
+        }
     }
 
     @Contract("_ -> new")

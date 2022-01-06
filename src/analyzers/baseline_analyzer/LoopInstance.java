@@ -97,12 +97,17 @@ public class LoopInstance {
 
         // Iterate through the memory address keys of the History Table of the inner loop, and the table list entries of those address keys that do not fall into
         // the current set of killed bits of the current (outer) loop instance are merged into the current loop instance's Pending Table
+
+        // TODO : Change that so that it does not need an external reference to the other loop's History Table
         PointTable innerHistoryTable = innerLoop.getHistoryPointTable(); // a reference to the History Table of the inner loop
         Set<Long> pendingWrites = new HashSet<>();
         for (Long keyAddr : innerHistoryTable.getKeySet()) {
             if (!isKilled(keyAddr)) {
-                this.pendingPointTable.mergeAddressLine(keyAddr, innerHistoryTable.getTableEntry(keyAddr));
-                this.pendingPointTable.accNewKilledBits(keyAddr, pendingWrites);
+                if (!innerHistoryTable.containsAccessType(keyAddr, MemoryAccess.READ) && !this.pendingPointTable.containsAccessType(keyAddr, MemoryAccess.READ)) {
+                    killedBits.add(keyAddr);
+                }
+                List<TableEntryPC> tempList = innerHistoryTable.getTableEntry(keyAddr);
+                this.pendingPointTable.mergeAddressLine(keyAddr, tempList);
             }
         }
         this.killedBits.addAll(pendingWrites);
