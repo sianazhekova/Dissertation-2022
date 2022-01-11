@@ -1,4 +1,5 @@
 package analyzers.baseline_analyzer;
+import java.util.*;
 
 /*
     This class will be storing the type of instruction-level dependence that has occurred for a referenced memory address (approximately),
@@ -11,7 +12,7 @@ import org.jetbrains.annotations.NotNull;
 
 public class InstructionLevelConflict {
 
-    private long approxMemAddress;
+    private Set<Long> approxMemAddressSet = new HashSet<>();
     DataDependence typeOfConflict;
     private PCPair prevInstruction;
     private PCPair nextInstruction;
@@ -23,14 +24,22 @@ public class InstructionLevelConflict {
         typeOfConflict = DataDependence.DEPNONE;
     }
 
-    public InstructionLevelConflict(long refAddress, @NotNull PCPair prevInstr, @NotNull PCPair nextInstr, long freqCount, long beginCount, long beginTime, long endTime) {
-        approxMemAddress = refAddress;
+    public InstructionLevelConflict(long refAddress, @NotNull PCPair prevInstr, @NotNull PCPair nextInstr, long freqCount, long beginTime, long endTime) {
+        approxMemAddressSet.add(refAddress);
         typeOfConflict = DataDependence.getDependence(prevInstr.getMemAccessType(), nextInstr.getMemAccessType());
         prevInstruction = prevInstr;
         nextInstruction = nextInstr;
         frequencyCount = freqCount;
         beginTripCount = beginTime;
         endTripCount = endTime;
+    }
+
+    public String convertAddressSetToString(@NotNull Set<Long> setOfAddresses) {
+        StringBuilder sb = new StringBuilder();
+        for (Long address : setOfAddresses) {
+            sb.append("{" + address + "}");
+        }
+        return sb.toString();
     }
 
     public boolean isAdditive(@NotNull InstructionLevelConflict anotherConflict) {
@@ -41,11 +50,12 @@ public class InstructionLevelConflict {
     public void addCountsFrom(InstructionLevelConflict anotherConflict) {
         assert(isAdditive(anotherConflict));
         frequencyCount += anotherConflict.getFrequencyCount();
+        approxMemAddressSet.addAll(anotherConflict.getApproxMemAddressSet());
         setEndTripCount(anotherConflict.getEndTripCount());
     }
 
-    public long getApproxMemAddress() {
-        return approxMemAddress;
+    public Set<Long> getApproxMemAddressSet() {
+        return approxMemAddressSet;
     }
 
     public PCPair getPrevInstruction() {
@@ -92,10 +102,9 @@ public class InstructionLevelConflict {
         frequencyCount = newFreqCount;
     }
 
-    @Override
-    public String toString() {
-        return String.format("RefAddr: %d | ConflictType: %s | PCFirst: %s | PCLast: %s | FreqCount: %d | StartTripCount: %d | LastTripCount : %d |",
-                approxMemAddress,
+    public String printToString() {
+        return String.format("| RefAddr: %d |\n | ConflictType: %s |\n | PCFirst: %s |\n | PCLast: %s |\n | FreqCount: %d |\n | StartTripCount: %d |\n | LastTripCount : %d |\n",
+                convertAddressSetToString(approxMemAddressSet),
                 DataDependence.getStringDepType(typeOfConflict),
                 prevInstruction.getPC(),
                 nextInstruction.getPC(),

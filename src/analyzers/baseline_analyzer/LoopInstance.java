@@ -10,8 +10,7 @@ public class LoopInstance {
 
     protected Set<Long> killedBits;
 
-    public LinkedHashMap<String, DataDependence> dependencies;
-    public LoopLevelSummary currLoopDependencies;  // TODO: information about loop dependencies
+    public Map<DataDependence, LoopInstanceLevelSummary> summaryDependencies;
 
     protected long numInnerLoops;
     protected long numLoopIterations;
@@ -21,6 +20,15 @@ public class LoopInstance {
         this.loopID = loopID;
         this.numLoopIterations = 0;
         this.numInnerLoops = 0;
+
+        pendingPointTable = new PointTable();
+        historyPointTable = new PointTable();
+        killedBits = new HashSet<>();
+
+        summaryDependencies = new HashMap<>();
+        summaryDependencies.put(DataDependence.RW, new LoopInstanceLevelSummary(loopID));
+        summaryDependencies.put(DataDependence.WR, new LoopInstanceLevelSummary(loopID));
+        summaryDependencies.put(DataDependence.WW, new LoopInstanceLevelSummary(loopID));
     }
 
     public long getLoopID() {
@@ -35,8 +43,8 @@ public class LoopInstance {
         return numLoopIterations;
     }
 
-    public LoopLevelSummary getCurrLoopDependencies() {
-        return currLoopDependencies;
+    public Map<DataDependence, LoopInstanceLevelSummary> getSummaryLoopInstanceDependencies() {
+        return summaryDependencies;
     }
 
     public PointTable getHistoryPointTable() {
@@ -115,18 +123,78 @@ public class LoopInstance {
     }
 
     public void loopIterationEnd() {
-        handleLoopDependencies();
+        recordLoopDataConflicts();
         mergePendingIntoHistory();
         this.numLoopIterations++;
     }
 
-    public void handleLoopDependencies() {
+    public void recordLoopDataConflicts() {
+        if (pendingPointTable.getKeySet().size() == 0) return;
 
+        Map<DataDependence, LinkedHashSet<InstructionLevelConflict>> mapInstructions = new HashMap<>();
+        mapInstructions.put(DataDependence.RW, new LinkedHashSet<>());
+        mapInstructions.put(DataDependence.WW, new LinkedHashSet<>());
+        mapInstructions.put(DataDependence.WR, new LinkedHashSet<>());
+
+        for (Long keyAddress : pendingPointTable.getKeySet()) {
+            List<TableEntryPC> currListOfEntries = pendingPointTable.getTableEntry(keyAddress);
+            if (currListOfEntries.size() > 0) {
+                DataDependence conflictType;
+
+                TableEntryPC pendingHead = currListOfEntries.get(0);
+                if (historyPointTable.containsKey(keyAddress)) {
+                    List<TableEntryPC> historyList = historyPointTable.getTableEntry(keyAddress);
+                    if (historyList.size() > 0) {
+                        TableEntryPC historyTail = historyList.get(historyList.size() - 1);
+                        conflictType = DataDependence.getDependence(historyTail.getMemAccessType(), pendingHead.getMemAccessType());
+                        if (conflictType == DataDependence.DEPNONE) continue;
+                        LinkedHashSet<InstructionLevelConflict> set = mapInstructions.get(conflictType);
+                        set.add(new InstructionLevelConflict(keyAddress,
+                                                            new PCPair(historyTail.getAddressPC(), historyTail.getMemAccessType()),
+                                                            new PCPair(pendingHead.getAddressPC(), pendingHead.getMemAccessType()),
+                                                            1,
+                                                            historyTail.getTripCount(),
+                                                            pendingHead.getTripCount()
+                        ));
+                    }
+                }
+                // Iterate through the rest of the TableEntryPC
+                int count = 0;
+                ListIterator<TableEntryPC> listIterator = currListOfEntries.listIterator();
+                TableEntryPC currEntry = listIterator.next();   // First Entry
+                DataDependence currConflict;
+                TableEntryPC nextEntry;
+                while (listIterator.hasNext()) {
+                    if (count++ == currListOfEntries.size() - 1) continue;
+                    nextEntry = listIterator.next();
+                    currConflict = DataDependence.getDependence(currEntry.getMemAccessType(), nextEntry.getMemAccessType());
+                    if (currConflict != DataDependence.DEPNONE) {
+                        LinkedHashSet<InstructionLevelConflict> set = mapInstructions.get(currConflict);
+                        set.add(new InstructionLevelConflict(keyAddress,
+                                new PCPair(currEntry.getAddressPC(), currEntry.getMemAccessType()),
+                                new PCPair(nextEntry.getAddressPC(), nextEntry.getMemAccessType()),
+                                1,
+                                currEntry.getTripCount(),
+                                nextEntry.getTripCount()
+                        ));
+                    }
+                    currEntry = nextEntry;
+                }
+            }
+        }
+        // Aggregate the Conflict Instruction Lists into LoopInstanceLevelSummary
+
+        for (DataDependence keyConflictType : mapInstructions.keySet()) {
+            LinkedHashSet<InstructionLevelConflict> currInstrList = mapInstructions.get(keyConflictType);
+            if (currInstrList.size() > 0) {
+                LoopInstanceLevelSummary instanceSummary = summaryDependencies.get(keyConflictType);
+                instanceSummary.addLoopIterationConflicts(currInstrList.size(), currInstrList);
+            }
+        }
     }
 
-    LoopLevelSummary loopTerminate() {
-        return currLoopDependencies;
+    Map<DataDependence, LoopInstanceLevelSummary> loopTermination() {
+        System.out.println(String.format("Loop Instance %d has terminated", loopID));
+        return summaryDependencies;
     }
-
-    /*  void handleConflicts(MemoryAccess pendingMode, MemoryAccess historyMode) */
 }
