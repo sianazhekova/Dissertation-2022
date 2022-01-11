@@ -29,6 +29,14 @@ public class MemBufferBlock {
         addressPC = -1;
     }
 
+    public boolean isALoopStart() { return event == EventType.START; }
+
+    public boolean isALoopEnd() { return event == EventType.END; }
+
+    public boolean isALoad() { return event == EventType.LOAD; }
+
+    public boolean isAStoreRead() { return event ==  }
+
     public EventType getEvent() {
         return event;
     }

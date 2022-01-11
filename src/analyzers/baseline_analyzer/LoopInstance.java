@@ -16,8 +16,9 @@ public class LoopInstance {
     protected long numLoopIterations;
     protected long loopID;
 
-    public void LoopInstance(long loopID) {
-        this.loopID = loopID;
+
+    public LoopInstance(long newLoopID) {
+        this.loopID = newLoopID;
         this.numLoopIterations = 0;
         this.numInnerLoops = 0;
 
@@ -55,7 +56,7 @@ public class LoopInstance {
         return pendingPointTable;  //.clone();
     }
 
-    public void addMemAccess(@NotNull PointPC pcPoint, long tripCount) {  // Block block, pc, ...detector
+    public void addNewMemoryAccess(@NotNull PointPC pcPoint, long tripCount) {  // Block block, pc, ...detector
         long memAddress = pcPoint.getRefStartAddress();
         long PCAddress = pcPoint.getPCPair().getPC();
         if (isKilled(pcPoint)) {
