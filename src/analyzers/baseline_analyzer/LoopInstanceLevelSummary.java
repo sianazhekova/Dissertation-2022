@@ -26,7 +26,7 @@ public class LoopInstanceLevelSummary {
         collectionOfConflicts = new ConflictCollection();
     }
 
-    public void addLoopIterationConflicts(long numConflicts, @NotNull LinkedHashSet<InstructionLevelConflict> conflictList) {
+    public void addLoopIterationConflicts(long numConflicts, @NotNull LinkedHashSet<PairwiseConflictLevelSummary> conflictList) {
         this.collectionOfConflicts.summariseInstructions(conflictList);
         incrementIterationState(numConflicts);
     }

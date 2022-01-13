@@ -6,8 +6,8 @@ public enum EventType {
     INVALID (-1),
     START (0),
     END (1),
-    LOAD (2),
-    STORE (3)
+    LOAD (2),  // == read
+    STORE (3)  // == write
     ;
 
     private int eventID;

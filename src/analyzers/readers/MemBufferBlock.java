@@ -1,7 +1,7 @@
 package analyzers.readers;
 
 /* This class represents a data structure that stores the type of memory access,
-    the address referenced, the size of memory access, and the PC address
+    the address referenced, the size of memory access (in Bytes), and the PC address
 * */
 
 public class MemBufferBlock {
@@ -35,7 +35,7 @@ public class MemBufferBlock {
 
     public boolean isALoad() { return event == EventType.LOAD; }
 
-    public boolean isAStoreRead() { return event ==  }
+    public boolean isAStore() { return event == EventType.STORE; }
 
     public EventType getEvent() {
         return event;

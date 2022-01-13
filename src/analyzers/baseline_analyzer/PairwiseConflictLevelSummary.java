@@ -10,7 +10,7 @@ import java.util.*;
 
 import org.jetbrains.annotations.NotNull;
 
-public class InstructionLevelConflict {
+public class PairwiseConflictLevelSummary {
 
     private Set<Long> approxMemAddressSet = new HashSet<>();
     DataDependence typeOfConflict;
@@ -20,11 +20,11 @@ public class InstructionLevelConflict {
     private long beginTripCount;
     private long endTripCount;
 
-    public InstructionLevelConflict() {
+    public PairwiseConflictLevelSummary() {
         typeOfConflict = DataDependence.DEPNONE;
     }
 
-    public InstructionLevelConflict(long refAddress, @NotNull PCPair prevInstr, @NotNull PCPair nextInstr, long freqCount, long beginTime, long endTime) {
+    public PairwiseConflictLevelSummary(long refAddress, @NotNull PCPair prevInstr, @NotNull PCPair nextInstr, long freqCount, long beginTime, long endTime) {
         approxMemAddressSet.add(refAddress);
         typeOfConflict = DataDependence.getDependence(prevInstr.getMemAccessType(), nextInstr.getMemAccessType());
         prevInstruction = prevInstr;
@@ -42,12 +42,12 @@ public class InstructionLevelConflict {
         return sb.toString();
     }
 
-    public boolean isAdditive(@NotNull InstructionLevelConflict anotherConflict) {
+    public boolean isAdditive(@NotNull PairwiseConflictLevelSummary anotherConflict) {
         return (prevInstruction.equalTo(anotherConflict.getPrevInstruction()) && nextInstruction.equalTo(anotherConflict.getNextInstruction())
                 && typeOfConflict.equals(anotherConflict.getTypeOfConflict()));
     }
 
-    public void addCountsFrom(InstructionLevelConflict anotherConflict) {
+    public void addCountsFrom(PairwiseConflictLevelSummary anotherConflict) {
         assert(isAdditive(anotherConflict));
         frequencyCount += anotherConflict.getFrequencyCount();
         approxMemAddressSet.addAll(anotherConflict.getApproxMemAddressSet());

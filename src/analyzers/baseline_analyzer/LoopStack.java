@@ -2,6 +2,7 @@ package analyzers.baseline_analyzer;
 
 import analyzers.readers.EventType;
 import analyzers.readers.MemBufferBlock;
+import jdk.jfr.Event;
 import org.jetbrains.annotations.NotNull;
 
 import javax.xml.crypto.Data;
@@ -12,29 +13,84 @@ public class LoopStack {
     protected Deque<LoopInstance> stack;
     public Map<Long, Map<DataDependence, LoopLevelSummary>> loopDependencies;
     public Set<Long> uniqueLoopIDs;
+    private boolean throwStackExceptions;
+
+    public LoopStack(boolean withExceptions) {
+        stack = new ArrayDeque<>();
+        loopDependencies = new HashMap<>();
+        uniqueLoopIDs = new HashSet<>();
+        throwStackExceptions = withExceptions;
+    }
 
     public LoopStack() {
         stack = new ArrayDeque<>();
         loopDependencies = new HashMap<>();
         uniqueLoopIDs = new HashSet<>();
+        throwStackExceptions = false;
     }
 
-    public void encounterNewAccess(@NotNull MemBufferBlock bufferBlock, long tripCount) {
-        EventType event = bufferBlock.getEvent();
-        //if ()
+    // TODO: Maybe add sanity-checks for input count of loop starts and loop ends
+    public void encounterNewAccess(@NotNull List<MemBufferBlock> bufferBlockPair, long tripCount) throws InvalidAdditionToEmptyLoopStackException, NullLoopInstanceException {
+        assert(bufferBlockPair.size() == 2 || bufferBlockPair.size() == 1);
+        MemBufferBlock firstBufferBlock = bufferBlockPair.get(0);
 
-    }
+        EventType event = firstBufferBlock.getEvent();
+        // This is the last memory buffer containing the instruction metadata about the memory access, in our selected trace file
+        if (bufferBlockPair.size() == 1 && event != EventType.END) return;
 
-    public void addMemoryAddress(long refStartAddress, long sizeOfAccess, MemoryAccess readOrWrite, long PCAddress, long numTrips) throws InvalidAdditionToEmptyLoopStackException {
-        if (stack.size() == 0) {
-            throw new InvalidAdditionToEmptyLoopStackException(String.format("Tried to add a load/store at trip count %d, at an approximate memory address %d that is a %s",
-                                                                                                    numTrips,
-                                                                                                    refStartAddress,
-                                                                                                    readOrWrite.name()),
-                                                                                                    numTrips,
-                                                                                                    refStartAddress,
-                                                                                                    readOrWrite);
+        if (event == EventType.START) {
+            // Newly encountered access is a start of a loop - either the first iteration of a new loop instance,
+            // or the i-th iteration of the loop instance at the top of the loop stack
+            long loopPCAddress = firstBufferBlock.getAddressPC();
+            if (!isSeen(loopPCAddress)) {
+                // Loop PC address has never been encountered before, or if it has, it has terminated and is not directly succeeding the previous iteration
+                startOfLoop(loopPCAddress);
+            }
+        } else if (event == EventType.END) {
+            if (bufferBlockPair.size() == 2) {
+
+                MemBufferBlock secondBufferBlock = bufferBlockPair.get(1);
+
+
+
+            } else {
+                assert(bufferBlockPair.size() == 1);
+                assert(!isStackEmpty());
+
+                while (!stack.isEmpty()) {
+                    LoopInstance topLoop = stack.peek();
+                    long topLoopID = topLoop.getLoopID();
+                    endOfLoopIteration(topLoopID);
+                    loopTermination(topLoopID);
+                }
+                return;
+            }
+        } else if (event == EventType.LOAD || event == EventType.STORE) {
+            long newPCAddress = firstBufferBlock.getAddressPC();
+            long newApproxRefAddress = firstBufferBlock.getAddressRef();
+            long newAccessSize = firstBufferBlock.getSizeOfAccess();
+            MemoryAccess newLoadOrStore = firstBufferBlock.isAStore() ? MemoryAccess.WRITE : MemoryAccess.READ;
+            if (stack.size() == 0) {
+                if (throwStackExceptions) {
+                    throw new InvalidAdditionToEmptyLoopStackException(String.format("Tried to add a load/store at trip count %d, at an approximate memory address %d that is a %s",
+                            tripCount,
+                            newApproxRefAddress,
+                            newLoadOrStore.name()),
+                            tripCount,
+                            newApproxRefAddress,
+                            newLoadOrStore);
+                }
+                // Memory accesses that are not strictly enclosed in a loop will not be taken into account
+                return;
+            }
+            addNewAccess(newApproxRefAddress, newAccessSize, newLoadOrStore, newPCAddress, tripCount);
+
+        } else {
+            System.out.println(String.format("An invalid address has been encountered at trip count %d\n", tripCount));
         }
+    }
+
+    public void addNewAccess(long refStartAddress, long sizeOfAccess, MemoryAccess readOrWrite, long PCAddress, long numTrips) {
         PointPC newPoint = new PointPC(refStartAddress, sizeOfAccess, readOrWrite, PCAddress);
         LoopInstance topLoopInstance = stack.peek();
         // Record memory space here
@@ -44,6 +100,7 @@ public class LoopStack {
 
     public void startOfLoop(long newLoopID) {
         stack.push(new LoopInstance(newLoopID));
+        encounterNewLoopID(newLoopID);
     }
 
     public void endOfLoopIteration(long newLoopID) {
@@ -57,10 +114,10 @@ public class LoopStack {
         // Record allocated memory space here
     }
 
-    public void loopTerminate(long newLoopID) throws NullLoopInstanceException {
-        if (stack.isEmpty() || stack.peek().getLoopID() != newLoopID) {
+    public void loopTermination(long currLoopID) throws NullLoopInstanceException {
+        if (stack.isEmpty() || stack.peek().getLoopID() != currLoopID) {
             // TODO: Convert that into a logging statement, using Java loggers
-            System.out.println("Invalid end of loop iteration with a mismatch of new loop ID = " + newLoopID + " and " + (stack.isEmpty() ? "Empty Stack" : stack.peek().getLoopID()));
+            System.out.println("Invalid end of loop iteration with a mismatch of new loop ID = " + currLoopID + " and " + (stack.isEmpty() ? "Empty Stack" : stack.peek().getLoopID()));
             return;
         }
         // Record Memory Space here
@@ -72,8 +129,9 @@ public class LoopStack {
             // Record Memory Space here
         }
         Map<DataDependence, LoopInstanceLevelSummary> topLoopConflicts = topLoop.getSummaryLoopInstanceDependencies();
-        summariseLoopsInStack(newLoopID, topLoopConflicts);
+        summariseLoopsInStack(currLoopID, topLoopConflicts);
         // Record Memory Space here
+        deleteLoopID(currLoopID);
     }
 
     public void summariseLoopsInStack(long currLoopInstance, @NotNull Map<DataDependence, LoopInstanceLevelSummary> loopInstanceConflicts) {
@@ -83,6 +141,11 @@ public class LoopStack {
             LoopLevelSummary thisLoopSummary = currDepMap.getOrDefault(conflictKey, new LoopLevelSummary());
             thisLoopSummary.addLoopInstanceConflicts(instanceSummary);
         }
+    }
+
+    // TODO: Implement this after passing the basic unit tests!
+    public String getOutputTotalStatistics() {
+        return new String();
     }
 
     public String printConflictsToString() {

@@ -11,19 +11,19 @@ public class ConflictCollection {
     * Encapsulates the aggregation of conflict objects in an array-like structure.
     */
 
-    LinkedHashSet<InstructionLevelConflict> conflictsCollection;
+    LinkedHashSet<PairwiseConflictLevelSummary> conflictsCollection;
 
     public ConflictCollection() {
         conflictsCollection = new LinkedHashSet<>();
     }
 
-    public ConflictCollection(List<InstructionLevelConflict> existingCollection) {
+    public ConflictCollection(LinkedHashSet<PairwiseConflictLevelSummary> existingCollection) {
         conflictsCollection.addAll(existingCollection);
     }
 
-    // TODO: Check if hashing an InstructionLevelConflict object is unique even if it has the same fields as an exisitng one in the set
-    public boolean canPartiallyCollect(@NotNull InstructionLevelConflict inputConflictObject) {
-        for (InstructionLevelConflict currConflictObject : conflictsCollection) {
+    // TODO: Check if hashing an PairwiseConflictLevelSummary object is unique even if it has the same fields as an exisitng one in the set
+    public boolean canPartiallyCollect(@NotNull PairwiseConflictLevelSummary inputConflictObject) {
+        for (PairwiseConflictLevelSummary currConflictObject : conflictsCollection) {
             if (currConflictObject.isAdditive(inputConflictObject)) {
                 currConflictObject.addCountsFrom(inputConflictObject);
                 return true;
@@ -32,8 +32,8 @@ public class ConflictCollection {
         return false;
     }
 
-    public void summariseInstructions(@NotNull LinkedHashSet<InstructionLevelConflict> summaryList) {
-        for (InstructionLevelConflict currConflict :  summaryList) {
+    public void summariseInstructions(@NotNull LinkedHashSet<PairwiseConflictLevelSummary> summaryList) {
+        for (PairwiseConflictLevelSummary currConflict :  summaryList) {
             if (!canPartiallyCollect(currConflict)) {
                 conflictsCollection.add(currConflict);
             }
@@ -47,7 +47,7 @@ public class ConflictCollection {
     public String printToString() {
         StringBuilder sb = new StringBuilder();
         int counter = 0;
-        for (InstructionLevelConflict currConflict : conflictsCollection) {
+        for (PairwiseConflictLevelSummary currConflict : conflictsCollection) {
             if (counter != conflictsCollection.size() - 1)
                 sb.append(currConflict.printToString() + "\n");
             counter++;

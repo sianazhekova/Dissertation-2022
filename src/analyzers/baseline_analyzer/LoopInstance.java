@@ -132,7 +132,7 @@ public class LoopInstance {
     public void recordLoopDataConflicts() {
         if (pendingPointTable.getKeySet().size() == 0) return;
 
-        Map<DataDependence, LinkedHashSet<InstructionLevelConflict>> mapInstructions = new HashMap<>();
+        Map<DataDependence, LinkedHashSet<PairwiseConflictLevelSummary>> mapInstructions = new HashMap<>();
         mapInstructions.put(DataDependence.RW, new LinkedHashSet<>());
         mapInstructions.put(DataDependence.WW, new LinkedHashSet<>());
         mapInstructions.put(DataDependence.WR, new LinkedHashSet<>());
@@ -149,8 +149,8 @@ public class LoopInstance {
                         TableEntryPC historyTail = historyList.get(historyList.size() - 1);
                         conflictType = DataDependence.getDependence(historyTail.getMemAccessType(), pendingHead.getMemAccessType());
                         if (conflictType == DataDependence.DEPNONE) continue;
-                        LinkedHashSet<InstructionLevelConflict> set = mapInstructions.get(conflictType);
-                        set.add(new InstructionLevelConflict(keyAddress,
+                        LinkedHashSet<PairwiseConflictLevelSummary> set = mapInstructions.get(conflictType);
+                        set.add(new PairwiseConflictLevelSummary(keyAddress,
                                                             new PCPair(historyTail.getAddressPC(), historyTail.getMemAccessType()),
                                                             new PCPair(pendingHead.getAddressPC(), pendingHead.getMemAccessType()),
                                                             1,
@@ -170,8 +170,8 @@ public class LoopInstance {
                     nextEntry = listIterator.next();
                     currConflict = DataDependence.getDependence(currEntry.getMemAccessType(), nextEntry.getMemAccessType());
                     if (currConflict != DataDependence.DEPNONE) {
-                        LinkedHashSet<InstructionLevelConflict> set = mapInstructions.get(currConflict);
-                        set.add(new InstructionLevelConflict(keyAddress,
+                        LinkedHashSet<PairwiseConflictLevelSummary> set = mapInstructions.get(currConflict);
+                        set.add(new PairwiseConflictLevelSummary(keyAddress,
                                 new PCPair(currEntry.getAddressPC(), currEntry.getMemAccessType()),
                                 new PCPair(nextEntry.getAddressPC(), nextEntry.getMemAccessType()),
                                 1,
@@ -186,7 +186,7 @@ public class LoopInstance {
         // Aggregate the Conflict Instruction Lists into LoopInstanceLevelSummary
 
         for (DataDependence keyConflictType : mapInstructions.keySet()) {
-            LinkedHashSet<InstructionLevelConflict> currInstrList = mapInstructions.get(keyConflictType);
+            LinkedHashSet<PairwiseConflictLevelSummary> currInstrList = mapInstructions.get(keyConflictType);
             if (currInstrList.size() > 0) {
                 LoopInstanceLevelSummary instanceSummary = summaryDependencies.get(keyConflictType);
                 instanceSummary.addLoopIterationConflicts(currInstrList.size(), currInstrList);
