@@ -12,20 +12,20 @@ public class LoopStack {
 
     protected Deque<LoopInstance> stack;
     public Map<Long, Map<DataDependence, LoopLevelSummary>> loopDependencies;
-    public Set<Long> uniqueLoopIDs;
+    public Set<Long> uniqueLoopIDsCache;
     private boolean throwStackExceptions;
 
     public LoopStack(boolean withExceptions) {
         stack = new ArrayDeque<>();
         loopDependencies = new HashMap<>();
-        uniqueLoopIDs = new HashSet<>();
+        uniqueLoopIDsCache = new HashSet<>();
         throwStackExceptions = withExceptions;
     }
 
     public LoopStack() {
         stack = new ArrayDeque<>();
         loopDependencies = new HashMap<>();
-        uniqueLoopIDs = new HashSet<>();
+        uniqueLoopIDsCache = new HashSet<>();
         throwStackExceptions = false;
     }
 
@@ -48,10 +48,20 @@ public class LoopStack {
             }
         } else if (event == EventType.END) {
             if (bufferBlockPair.size() == 2) {
+                long topLoopID = stack.peek().getLoopID();
 
                 MemBufferBlock secondBufferBlock = bufferBlockPair.get(1);
+                EventType eventAfter = secondBufferBlock.getEvent();
+                long loopSuccessorID = secondBufferBlock.getAddressPC();
 
-
+                if (eventAfter == EventType.START && topLoopID == loopSuccessorID) {  // isSeen(loopSuccessorID)
+                    // This means the current loop has another iteration at least so only the loop-iteration-end stage should be invoked
+                    endOfLoopIteration(topLoopID);
+                    return;
+                }
+                // The END signal at this code point signifies the end of the iteration of the top-most (current) loop instance, as well as its termination
+                endOfLoopIteration(topLoopID);
+                loopTermination(topLoopID);
 
             } else {
                 assert(bufferBlockPair.size() == 1);
@@ -130,8 +140,8 @@ public class LoopStack {
         }
         Map<DataDependence, LoopInstanceLevelSummary> topLoopConflicts = topLoop.getSummaryLoopInstanceDependencies();
         summariseLoopsInStack(currLoopID, topLoopConflicts);
+        deleteLoopIDCache(currLoopID);
         // Record Memory Space here
-        deleteLoopID(currLoopID);
     }
 
     public void summariseLoopsInStack(long currLoopInstance, @NotNull Map<DataDependence, LoopInstanceLevelSummary> loopInstanceConflicts) {
@@ -148,10 +158,6 @@ public class LoopStack {
         return new String();
     }
 
-    public String printConflictsToString() {
-        return new String();
-    }
-
     public Deque<LoopInstance> getRefToStack() {
         return stack; // Ideally, we would want to return a reference to the cloned stack member, but this would incur extra memory at runtime that may impact our measurements of the runtime memory of the loop instance tables
     }
@@ -165,16 +171,16 @@ public class LoopStack {
     }
 
     public boolean isSeen(long loopIDAddress) {
-        return uniqueLoopIDs.contains(loopIDAddress);
+        return uniqueLoopIDsCache.contains(loopIDAddress);
     }
 
     public boolean encounterNewLoopID(long loopIDAddress) {
-        return uniqueLoopIDs.add(loopIDAddress);
+        return uniqueLoopIDsCache.add(loopIDAddress);
     }
 
-    public boolean deleteLoopID(long loopIDAddress) {
-        if (uniqueLoopIDs.contains(loopIDAddress)) {
-            uniqueLoopIDs.remove(loopIDAddress);
+    public boolean deleteLoopIDCache(long loopIDAddress) {
+        if (uniqueLoopIDsCache.contains(loopIDAddress)) {
+            uniqueLoopIDsCache.remove(loopIDAddress);
             return true;
         }
         return false;
