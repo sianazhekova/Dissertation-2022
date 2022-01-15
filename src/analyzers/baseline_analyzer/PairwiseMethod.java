@@ -30,14 +30,15 @@ public class PairwiseMethod implements PairwiseMethodInterface {
     // The driver program
     public void pairwiseMethod() throws IOException {
         try {
-            BufferedReader br = new BufferedReader(new FileReader(this.filePath));
+            Scanner sc = new Scanner(new File(this.filePath));
             String line;
 
             LoopStack loopStack = new LoopStack();
 
             List<MemBufferBlock> memBufferList = new ArrayList<>();
             int parityCount = 0;
-            while ((line = br.readLine()) != null || memBufferList.size() != 0) {
+            while (sc.hasNextLine()) {
+                line = sc.nextLine();
                 MemBufferBlock currMemBuff = InstructionsFileReader.parseTraceFileLine(line);
                 if (currMemBuff.getEvent() == EventType.STORE || currMemBuff.getEvent() == EventType.LOAD)
                     this.numTrips++;
@@ -62,7 +63,8 @@ public class PairwiseMethod implements PairwiseMethodInterface {
                 if (parityCount++ < 2) {
                     memBufferList.add(currMemBuff);
                     //System.out.println("The current list of memory buffers is of size " + memBufferList.size());
-                    continue;
+                    if (sc.hasNextLine() && memBufferList.size() != 2)
+                        continue;
                 }
                 //System.out.println("h The current list of memory buffers is of size " + memBufferList.size());
 
