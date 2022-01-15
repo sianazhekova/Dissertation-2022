@@ -68,7 +68,11 @@ public class PairwiseMethod implements PairwiseMethodInterface {
                 }
                 //System.out.println("h The current list of memory buffers is of size " + memBufferList.size());
 
-                //loopStack.encounterNewAccess(memBufferList, numTrips);
+                loopStack.encounterNewAccess(memBufferList, numTrips);
+
+                String loopStackDepProfilingOutput = loopStack.getOutputTotalStatistics();
+
+                System.out.println(loopStackDepProfilingOutput);
 
 
                 memBufferList.clear();
@@ -79,6 +83,11 @@ public class PairwiseMethod implements PairwiseMethodInterface {
             System.out.println("The provided file name shortcut or filepath is invalid.");
             fileNotFoundException.printStackTrace();
             return;
+
+        } catch (InvalidAdditionToEmptyLoopStackException e) {
+            e.printStackTrace();
+        } catch (NullLoopInstanceException e) {
+            e.printStackTrace();
         }
     }
 

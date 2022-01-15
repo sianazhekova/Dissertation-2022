@@ -3,7 +3,7 @@ package analyzers.baseline_analyzer;
 import analyzers.readers.EventType;
 import analyzers.readers.InstructionsFileReader;
 import analyzers.readers.MemBufferBlock;
-import jdk.jfr.Event;
+import java.lang.*;
 import org.jetbrains.annotations.NotNull;
 
 import java.math.BigInteger;
@@ -111,6 +111,13 @@ public class LoopStack {
 
     public void startOfLoop(BigInteger newLoopID) {
         stack.push(new LoopInstance(newLoopID));
+        Map<DataDependence, LoopLevelSummary> depMapSummary = loopDependencies.getOrDefault(newLoopID, new HashMap<>());
+        DataDependence[] tempList = new DataDependence[]{DataDependence.RW, DataDependence.WR, DataDependence.WW};
+        for (DataDependence depKey : tempList) {
+            if (!depMapSummary.containsKey(depKey)) {
+                depMapSummary.put(depKey, new LoopLevelSummary());
+            }
+        }
         encounterNewLoopID(newLoopID);
     }
 
@@ -156,7 +163,15 @@ public class LoopStack {
 
     // TODO: Implement this after passing the basic unit tests!
     public String getOutputTotalStatistics() {
-        return new String();
+        if (loopDependencies.size() == 0) return new String("No Loops recorded");
+        StringBuilder sb = new StringBuilder();
+        for (BigInteger loopID : loopDependencies.keySet()) {
+            sb.append(InstructionsFileReader.toHexString(loopID) + " : \n");
+            sb.append(DataDependence.RW.name() + " : \n".indent(2));
+            sb.append(loopDependencies.get(loopID).get(DataDependence.RW).printToString());
+        }
+
+        return sb.toString();
     }
 
     public Deque<LoopInstance> getRefToStack() {
