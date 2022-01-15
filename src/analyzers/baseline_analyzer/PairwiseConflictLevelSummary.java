@@ -1,4 +1,5 @@
 package analyzers.baseline_analyzer;
+import java.math.BigInteger;
 import java.util.*;
 
 /*
@@ -8,11 +9,12 @@ import java.util.*;
     the trip count of the most recent memory access causing that dependence.
 */
 
+import analyzers.readers.InstructionsFileReader;
 import org.jetbrains.annotations.NotNull;
 
 public class PairwiseConflictLevelSummary {
 
-    private Set<Long> approxMemAddressSet = new HashSet<>();
+    private Set<BigInteger> approxMemAddressSet = new HashSet<>();
     DataDependence typeOfConflict;
     private PCPair prevInstruction;
     private PCPair nextInstruction;
@@ -24,7 +26,7 @@ public class PairwiseConflictLevelSummary {
         typeOfConflict = DataDependence.DEPNONE;
     }
 
-    public PairwiseConflictLevelSummary(long refAddress, @NotNull PCPair prevInstr, @NotNull PCPair nextInstr, long freqCount, long beginTime, long endTime) {
+    public PairwiseConflictLevelSummary(BigInteger refAddress, @NotNull PCPair prevInstr, @NotNull PCPair nextInstr, long freqCount, long beginTime, long endTime) {
         approxMemAddressSet.add(refAddress);
         typeOfConflict = DataDependence.getDependence(prevInstr.getMemAccessType(), nextInstr.getMemAccessType());
         prevInstruction = prevInstr;
@@ -34,11 +36,12 @@ public class PairwiseConflictLevelSummary {
         endTripCount = endTime;
     }
 
-    public String convertAddressSetToString(@NotNull Set<Long> setOfAddresses) {
+    public String convertAddressSetToString(@NotNull Set<BigInteger> setOfAddresses) {
         StringBuilder sb = new StringBuilder();
-        for (Long address : setOfAddresses) {
-            sb.append("{" + address + "}");
+        for (BigInteger address : setOfAddresses) {
+            sb.append("{" + InstructionsFileReader.toHexString(address) + "}");
         }
+        sb.append("\n");
         return sb.toString();
     }
 
@@ -54,7 +57,7 @@ public class PairwiseConflictLevelSummary {
         setEndTripCount(anotherConflict.getEndTripCount());
     }
 
-    public Set<Long> getApproxMemAddressSet() {
+    public Set<BigInteger> getApproxMemAddressSet() {
         return approxMemAddressSet;
     }
 
@@ -103,11 +106,11 @@ public class PairwiseConflictLevelSummary {
     }
 
     public String printToString() {
-        return String.format("| RefAddr: %d |\n | ConflictType: %s |\n | PCFirst: %s |\n | PCLast: %s |\n | FreqCount: %d |\n | StartTripCount: %d |\n | LastTripCount : %d |\n",
+        return String.format("| RefAddr: %s |\n | ConflictType: %s |\n | PCFirst: %s |\n | PCLast: %s |\n | FreqCount: %d |\n | StartTripCount: %d |\n | LastTripCount : %d |\n",
                 convertAddressSetToString(approxMemAddressSet),
                 DataDependence.getStringDepType(typeOfConflict),
-                prevInstruction.getPC(),
-                nextInstruction.getPC(),
+                InstructionsFileReader.toHexString(prevInstruction.getPC()),
+                InstructionsFileReader.toHexString(nextInstruction.getPC()),
                 frequencyCount,
                 beginTripCount,
                 endTripCount

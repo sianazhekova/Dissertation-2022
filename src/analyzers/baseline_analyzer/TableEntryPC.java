@@ -2,12 +2,14 @@ package analyzers.baseline_analyzer;
 
 // This will be for storing entries in PointTables
 
+import java.math.BigInteger;
+
 public class TableEntryPC {
     private PCPair pairPC;
     private long tripCount;  // 2 ways of implementing this - either via Time module to record timestamps or count number of non-START/END events
     private int numOccurrence;
 
-    public long getAddressPC() {
+    public BigInteger getAddressPC() {
         return pairPC.getPC();
     }
 
@@ -31,7 +33,7 @@ public class TableEntryPC {
         this.numOccurrence = freqCount;
     }
 
-    public TableEntryPC(long PCAddress, long numTrips, MemoryAccess readOrWrite, int freqCount) {
+    public TableEntryPC(BigInteger PCAddress, long numTrips, MemoryAccess readOrWrite, int freqCount) {
         this.pairPC = new PCPair(PCAddress, readOrWrite);
         this.tripCount = numTrips;
         this.numOccurrence = freqCount;

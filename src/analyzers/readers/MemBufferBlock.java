@@ -4,29 +4,31 @@ package analyzers.readers;
     the address referenced, the size of memory access (in Bytes), and the PC address
 * */
 
+import java.math.BigInteger;
+
 public class MemBufferBlock {
     private EventType event;
-    private long addressRef;
-    private long sizeOfAccess;
-    private long addressPC;
+    private BigInteger addressRef;
+    private BigInteger sizeOfAccess;
+    private BigInteger addressPC;
 
-    public MemBufferBlock(EventType memAccess, long refAddr, long size, long pcAddr) {
+    public MemBufferBlock(EventType memAccess, BigInteger refAddr, BigInteger size, BigInteger pcAddr) {
         event = memAccess;
         addressRef = refAddr;
         sizeOfAccess = size;
         addressPC = pcAddr;
     }
 
-    public MemBufferBlock(EventType memAccess, long pcAddr) {
+    public MemBufferBlock(EventType memAccess, BigInteger pcAddr) {
         event = memAccess;
         addressPC = pcAddr;
     }
 
     public MemBufferBlock() {
         event = EventType.INVALID;
-        addressRef = -1;
-        sizeOfAccess = -1;
-        addressPC = -1;
+        addressRef = BigInteger.valueOf(-1);
+        sizeOfAccess = BigInteger.valueOf(-1);
+        addressPC = BigInteger.valueOf(-1);
     }
 
     public boolean isALoopStart() { return event == EventType.START; }
@@ -41,15 +43,15 @@ public class MemBufferBlock {
         return event;
     }
 
-    public long getAddressPC() {
+    public BigInteger getAddressPC() {
         return addressPC;
     }
 
-    public long getAddressRef() {
+    public BigInteger getAddressRef() {
         return addressRef;
     }
 
-    public long getSizeOfAccess() {
+    public BigInteger getSizeOfAccess() {
         return sizeOfAccess;
     }
 }

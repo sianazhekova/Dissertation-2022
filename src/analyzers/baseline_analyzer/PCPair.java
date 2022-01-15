@@ -2,21 +2,23 @@ package analyzers.baseline_analyzer;
 
 import org.jetbrains.annotations.NotNull;
 
+import java.math.BigInteger;
+
 public class PCPair implements Comparable<PCPair>{
-    protected long PC;
+    protected BigInteger PC;
     protected MemoryAccess readOrWrite;
 
     public PCPair() {
-        PC = -1;
+        PC = BigInteger.valueOf(-1);
         readOrWrite = MemoryAccess.INVALID;
     }
 
-    public PCPair(long PCAddress, MemoryAccess memoryAccess) {
+    public PCPair(BigInteger PCAddress, MemoryAccess memoryAccess) {
         PC = PCAddress;
         readOrWrite = memoryAccess;
     }
 
-    public long getPC() {
+    public BigInteger getPC() {
         return PC;
     }
 
@@ -26,7 +28,7 @@ public class PCPair implements Comparable<PCPair>{
 
     @Override
     public int compareTo(@NotNull PCPair otherPair) {
-        int comparison = Long.compare(this.PC, otherPair.getPC());
+        int comparison = this.PC.compareTo(otherPair.getPC());
 
         if (comparison != 0)
             return comparison;
@@ -35,7 +37,7 @@ public class PCPair implements Comparable<PCPair>{
     }
 
     public boolean equalTo(@NotNull PCPair otherPair) {
-        return this.PC == otherPair.getPC() && this.readOrWrite.getIntID() == otherPair.getMemAccessType().getIntID();
+        return this.PC.equals(otherPair.getPC()) && this.readOrWrite.getIntID() == otherPair.getMemAccessType().getIntID();
     }
 
 }

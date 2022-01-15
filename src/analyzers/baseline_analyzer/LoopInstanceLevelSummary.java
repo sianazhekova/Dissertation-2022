@@ -1,6 +1,7 @@
 package analyzers.baseline_analyzer;
 import org.jetbrains.annotations.NotNull;
 
+import java.math.BigInteger;
 import java.util.*;
 
 public class LoopInstanceLevelSummary {
@@ -12,13 +13,13 @@ public class LoopInstanceLevelSummary {
      *  and a collection of conflicts (encapsulated in a custom class type) detected within the loop.
      */
 
-    private final long loopID;
+    private final BigInteger loopID;
     private long totalCountIterations;
     private long countConflictIterations;
     private long totalCountDataDependencies;
     private ConflictCollection collectionOfConflicts;
 
-    public LoopInstanceLevelSummary(long newLoopID) {
+    public LoopInstanceLevelSummary(BigInteger newLoopID) {
         loopID = newLoopID;
         totalCountIterations = 0;
         countConflictIterations = 0;
@@ -63,7 +64,7 @@ public class LoopInstanceLevelSummary {
         return totalCountIterations;
     }
 
-    public long getLoopID() {
+    public BigInteger getLoopID() {
         return loopID;
     }
 

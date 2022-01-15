@@ -1,18 +1,19 @@
 package analyzers.baseline_analyzer;
 
 import analyzers.readers.EventType;
+import analyzers.readers.InstructionsFileReader;
 import analyzers.readers.MemBufferBlock;
 import jdk.jfr.Event;
 import org.jetbrains.annotations.NotNull;
 
-import javax.xml.crypto.Data;
+import java.math.BigInteger;
 import java.util.*;
 
 public class LoopStack {
 
     protected Deque<LoopInstance> stack;
-    public Map<Long, Map<DataDependence, LoopLevelSummary>> loopDependencies;
-    public Set<Long> uniqueLoopIDsCache;
+    public Map<BigInteger, Map<DataDependence, LoopLevelSummary>> loopDependencies;
+    public Set<BigInteger> uniqueLoopIDsCache;
     private boolean throwStackExceptions;
 
     public LoopStack(boolean withExceptions) {
@@ -41,18 +42,18 @@ public class LoopStack {
         if (event == EventType.START) {
             // Newly encountered access is a start of a loop - either the first iteration of a new loop instance,
             // or the i-th iteration of the loop instance at the top of the loop stack
-            long loopPCAddress = firstBufferBlock.getAddressPC();
+            BigInteger loopPCAddress = firstBufferBlock.getAddressPC();
             if (!isSeen(loopPCAddress)) {
                 // Loop PC address has never been encountered before, or if it has, it has terminated and is not directly succeeding the previous iteration
                 startOfLoop(loopPCAddress);
             }
         } else if (event == EventType.END) {
             if (bufferBlockPair.size() == 2) {
-                long topLoopID = stack.peek().getLoopID();
+                BigInteger topLoopID = stack.peek().getLoopID();
 
                 MemBufferBlock secondBufferBlock = bufferBlockPair.get(1);
                 EventType eventAfter = secondBufferBlock.getEvent();
-                long loopSuccessorID = secondBufferBlock.getAddressPC();
+                BigInteger loopSuccessorID = secondBufferBlock.getAddressPC();
 
                 if (eventAfter == EventType.START && topLoopID == loopSuccessorID) {  // isSeen(loopSuccessorID)
                     // This means the current loop has another iteration at least so only the loop-iteration-end stage should be invoked
@@ -69,16 +70,16 @@ public class LoopStack {
 
                 while (!stack.isEmpty()) {
                     LoopInstance topLoop = stack.peek();
-                    long topLoopID = topLoop.getLoopID();
+                    BigInteger topLoopID = topLoop.getLoopID();
                     endOfLoopIteration(topLoopID);
                     loopTermination(topLoopID);
                 }
                 return;
             }
         } else if (event == EventType.LOAD || event == EventType.STORE) {
-            long newPCAddress = firstBufferBlock.getAddressPC();
-            long newApproxRefAddress = firstBufferBlock.getAddressRef();
-            long newAccessSize = firstBufferBlock.getSizeOfAccess();
+            BigInteger newPCAddress = firstBufferBlock.getAddressPC();
+            BigInteger newApproxRefAddress = firstBufferBlock.getAddressRef();
+            BigInteger newAccessSize = firstBufferBlock.getSizeOfAccess();
             MemoryAccess newLoadOrStore = firstBufferBlock.isAStore() ? MemoryAccess.WRITE : MemoryAccess.READ;
             if (stack.size() == 0) {
                 if (throwStackExceptions) {
@@ -100,7 +101,7 @@ public class LoopStack {
         }
     }
 
-    public void addNewAccess(long refStartAddress, long sizeOfAccess, MemoryAccess readOrWrite, long PCAddress, long numTrips) {
+    public void addNewAccess(BigInteger refStartAddress, BigInteger sizeOfAccess, MemoryAccess readOrWrite, BigInteger PCAddress, long numTrips) {
         PointPC newPoint = new PointPC(refStartAddress, sizeOfAccess, readOrWrite, PCAddress);
         LoopInstance topLoopInstance = stack.peek();
         // Record memory space here
@@ -108,13 +109,13 @@ public class LoopStack {
         // Record memory space here
     }
 
-    public void startOfLoop(long newLoopID) {
+    public void startOfLoop(BigInteger newLoopID) {
         stack.push(new LoopInstance(newLoopID));
         encounterNewLoopID(newLoopID);
     }
 
-    public void endOfLoopIteration(long newLoopID) {
-        if (stack.isEmpty() || stack.peek().getLoopID() != newLoopID) {
+    public void endOfLoopIteration(BigInteger newLoopID) {
+        if (stack.isEmpty() || !stack.peek().getLoopID().equals(newLoopID)) {
             // TODO: Convert that into a logging statement, using Java loggers
             System.out.println("Invalid end of loop iteration with a mismatch of new loop ID = " + newLoopID + " and " + (stack.isEmpty() ? "Empty Stack" : stack.peek().getLoopID()));
             return;
@@ -124,10 +125,10 @@ public class LoopStack {
         // Record allocated memory space here
     }
 
-    public void loopTermination(long currLoopID) throws NullLoopInstanceException {
+    public void loopTermination(BigInteger currLoopID) throws NullLoopInstanceException {
         if (stack.isEmpty() || stack.peek().getLoopID() != currLoopID) {
             // TODO: Convert that into a logging statement, using Java loggers
-            System.out.println("Invalid end of loop iteration with a mismatch of new loop ID = " + currLoopID + " and " + (stack.isEmpty() ? "Empty Stack" : stack.peek().getLoopID()));
+            System.out.println("Invalid end of loop iteration with a mismatch of new loop ID = " + InstructionsFileReader.toHexString(currLoopID) + " and " + (stack.isEmpty() ? "Empty Stack" : InstructionsFileReader.toHexString(stack.peek().getLoopID())));
             return;
         }
         // Record Memory Space here
@@ -144,7 +145,7 @@ public class LoopStack {
         // Record Memory Space here
     }
 
-    public void summariseLoopsInStack(long currLoopInstance, @NotNull Map<DataDependence, LoopInstanceLevelSummary> loopInstanceConflicts) {
+    public void summariseLoopsInStack(BigInteger currLoopInstance, @NotNull Map<DataDependence, LoopInstanceLevelSummary> loopInstanceConflicts) {
         Map<DataDependence, LoopLevelSummary> currDepMap = this.loopDependencies.get(currLoopInstance);
         for (DataDependence conflictKey : currDepMap.keySet()) {
             LoopInstanceLevelSummary instanceSummary = loopInstanceConflicts.get(conflictKey);
@@ -166,19 +167,19 @@ public class LoopStack {
         return stack.isEmpty();
     }
 
-    public Map<Long, Map<DataDependence, LoopLevelSummary>> getLoopDependencies() {
+    public Map<BigInteger, Map<DataDependence, LoopLevelSummary>> getLoopDependencies() {
         return loopDependencies;
     }
 
-    public boolean isSeen(long loopIDAddress) {
+    public boolean isSeen(BigInteger loopIDAddress) {
         return uniqueLoopIDsCache.contains(loopIDAddress);
     }
 
-    public boolean encounterNewLoopID(long loopIDAddress) {
+    public boolean encounterNewLoopID(BigInteger loopIDAddress) {
         return uniqueLoopIDsCache.add(loopIDAddress);
     }
 
-    public boolean deleteLoopIDCache(long loopIDAddress) {
+    public boolean deleteLoopIDCache(BigInteger loopIDAddress) {
         if (uniqueLoopIDsCache.contains(loopIDAddress)) {
             uniqueLoopIDsCache.remove(loopIDAddress);
             return true;

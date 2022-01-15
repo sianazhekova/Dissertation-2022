@@ -2,22 +2,23 @@ package analyzers.baseline_analyzer;
 
 import org.jetbrains.annotations.NotNull;
 
+import java.math.BigInteger;
 import java.util.*;
 
 public class LoopInstance {
     protected PointTable pendingPointTable;
     protected PointTable historyPointTable;
 
-    protected Set<Long> killedBits;
+    protected Set<BigInteger> killedBits;
 
     public Map<DataDependence, LoopInstanceLevelSummary> summaryDependencies;
 
     protected long numInnerLoops;
     protected long numLoopIterations;
-    protected long loopID;
+    protected BigInteger loopID;
 
 
-    public LoopInstance(long newLoopID) {
+    public LoopInstance(BigInteger newLoopID) {
         this.loopID = newLoopID;
         this.numLoopIterations = 0;
         this.numInnerLoops = 0;
@@ -27,12 +28,12 @@ public class LoopInstance {
         killedBits = new HashSet<>();
 
         summaryDependencies = new HashMap<>();
-        summaryDependencies.put(DataDependence.RW, new LoopInstanceLevelSummary(loopID));
-        summaryDependencies.put(DataDependence.WR, new LoopInstanceLevelSummary(loopID));
-        summaryDependencies.put(DataDependence.WW, new LoopInstanceLevelSummary(loopID));
+        summaryDependencies.put(DataDependence.RW, new LoopInstanceLevelSummary(newLoopID));
+        summaryDependencies.put(DataDependence.WR, new LoopInstanceLevelSummary(newLoopID));
+        summaryDependencies.put(DataDependence.WW, new LoopInstanceLevelSummary(newLoopID));
     }
 
-    public long getLoopID() {
+    public BigInteger getLoopID() {
         return loopID;
     }
 
@@ -57,8 +58,8 @@ public class LoopInstance {
     }
 
     public void addNewMemoryAccess(@NotNull PointPC pcPoint, long tripCount) {  // Block block, pc, ...detector
-        long memAddress = pcPoint.getRefStartAddress();
-        long PCAddress = pcPoint.getPCPair().getPC();
+        BigInteger memAddress = pcPoint.getRefStartAddress();
+        BigInteger PCAddress = pcPoint.getPCPair().getPC();
         if (isKilled(pcPoint)) {
             // Report a loop independent dependence
             // TODO: Encapsulate tracking of loop-independent dependencies in a class
@@ -89,7 +90,7 @@ public class LoopInstance {
         return killedBits.contains(memAccessPoint.getRefStartAddress());
     }
 
-    public boolean isKilled(Long memAccessRefAddr) {
+    public boolean isKilled(BigInteger memAccessRefAddr) {
         return killedBits.contains(memAccessRefAddr);
     }
 
@@ -109,8 +110,8 @@ public class LoopInstance {
 
         // TODO : Change that so that it does not need an external reference to the other loop's History Table
         PointTable innerHistoryTable = innerLoop.getHistoryPointTable(); // a reference to the History Table of the inner loop
-        Set<Long> pendingWrites = new HashSet<>();
-        for (Long keyAddr : innerHistoryTable.getKeySet()) {
+        Set<BigInteger> pendingWrites = new HashSet<>();
+        for (BigInteger keyAddr : innerHistoryTable.getKeySet()) {
             if (!isKilled(keyAddr)) {
                 if (!innerHistoryTable.containsAccessType(keyAddr, MemoryAccess.READ) && !this.pendingPointTable.containsAccessType(keyAddr, MemoryAccess.READ)) {
                     killedBits.add(keyAddr);
@@ -137,7 +138,7 @@ public class LoopInstance {
         mapInstructions.put(DataDependence.WW, new LinkedHashSet<>());
         mapInstructions.put(DataDependence.WR, new LinkedHashSet<>());
 
-        for (Long keyAddress : pendingPointTable.getKeySet()) {
+        for (BigInteger keyAddress : pendingPointTable.getKeySet()) {
             List<TableEntryPC> currListOfEntries = pendingPointTable.getTableEntry(keyAddress);
             if (currListOfEntries.size() > 0) {
                 DataDependence conflictType;
