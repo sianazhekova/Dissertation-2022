@@ -34,6 +34,8 @@ public class PointPC {
         return refStartAddress;
     }
 
+    public BigInteger getEndAddress() { return endAddress; }
+
     public PCPair getPCPair() {
         return pcPair;
     }

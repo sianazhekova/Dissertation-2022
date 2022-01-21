@@ -41,7 +41,6 @@ public class PairwiseConflictLevelSummary {
         for (BigInteger address : setOfAddresses) {
             sb.append("{" + InstructionsFileReader.toHexString(address) + "}");
         }
-        sb.append("\n");
         return sb.toString();
     }
 
@@ -106,7 +105,7 @@ public class PairwiseConflictLevelSummary {
     }
 
     public String printToString() {
-        return String.format("| RefAddr: %s |\n | ConflictType: %s |\n | PCFirst: %s |\n | PCLast: %s |\n | FreqCount: %d |\n | StartTripCount: %d |\n | LastTripCount : %d |\n",
+        return String.format("| RefAddr: %s | | ConflictType: %s | | PCFirst: %s | | PCLast: %s | | FreqCount: %d | | StartTripCount: %d | | LastTripCount : %d |",
                 convertAddressSetToString(approxMemAddressSet),
                 DataDependence.getStringDepType(typeOfConflict),
                 InstructionsFileReader.toHexString(prevInstruction.getPC()),

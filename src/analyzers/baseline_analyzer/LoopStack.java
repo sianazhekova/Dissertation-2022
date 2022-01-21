@@ -34,8 +34,8 @@ public class LoopStack {
     public void encounterNewAccess(@NotNull List<MemBufferBlock> bufferBlockPair, long tripCount) throws InvalidAdditionToEmptyLoopStackException, NullLoopInstanceException {
         assert(bufferBlockPair.size() == 2 || bufferBlockPair.size() == 1);
         MemBufferBlock firstBufferBlock = bufferBlockPair.get(0);
-
         EventType event = firstBufferBlock.getEvent();
+        System.out.println("The mem address to be added has a trip count of " + tripCount +  " and corresponds to the address " + InstructionsFileReader.toHexString(firstBufferBlock.getAddressPC()));
         // This is the last memory buffer containing the instruction metadata about the memory access, in our selected trace file
         if (bufferBlockPair.size() == 1 && event != EventType.END) return;
 
@@ -112,13 +112,16 @@ public class LoopStack {
     public void startOfLoop(BigInteger newLoopID) {
         stack.push(new LoopInstance(newLoopID));
         Map<DataDependence, LoopLevelSummary> depMapSummary = loopDependencies.getOrDefault(newLoopID, new HashMap<>());
-        DataDependence[] tempList = new DataDependence[]{DataDependence.RW, DataDependence.WR, DataDependence.WW};
-        for (DataDependence depKey : tempList) {
-            if (!depMapSummary.containsKey(depKey)) {
-                depMapSummary.put(depKey, new LoopLevelSummary());
+
+        if (encounterNewLoopID(newLoopID)) {
+            DataDependence[] tempList = new DataDependence[]{ DataDependence.RW, DataDependence.WR, DataDependence.WW };
+            for (DataDependence depKey : tempList) {
+                if (!depMapSummary.containsKey(depKey)) {
+                    depMapSummary.put(depKey, new LoopLevelSummary());
+                }
             }
+            loopDependencies.put(newLoopID,depMapSummary);
         }
-        encounterNewLoopID(newLoopID);
     }
 
     public void endOfLoopIteration(BigInteger newLoopID) {
@@ -138,6 +141,7 @@ public class LoopStack {
             System.out.println("Invalid end of loop iteration with a mismatch of new loop ID = " + InstructionsFileReader.toHexString(currLoopID) + " and " + (stack.isEmpty() ? "Empty Stack" : InstructionsFileReader.toHexString(stack.peek().getLoopID())));
             return;
         }
+        System.out.println();
         // Record Memory Space here
         LoopInstance topLoop = stack.pop();
         if (stack.size() >= 1) {
@@ -167,8 +171,13 @@ public class LoopStack {
         StringBuilder sb = new StringBuilder();
         for (BigInteger loopID : loopDependencies.keySet()) {
             sb.append(InstructionsFileReader.toHexString(loopID) + " : \n");
-            sb.append(DataDependence.RW.name() + " : \n".indent(2));
-            sb.append(loopDependencies.get(loopID).get(DataDependence.RW).printToString());
+            DataDependence[] dependencies = new DataDependence[]{ DataDependence.RW, DataDependence.WW, DataDependence.WR };
+
+            for (DataDependence depType : dependencies) {
+                sb.append(depType.name() + " : \n".indent(2));
+                sb.append(loopDependencies.get(loopID).get(depType).printToString());
+            }
+            sb.append("\n");
         }
 
         return sb.toString();

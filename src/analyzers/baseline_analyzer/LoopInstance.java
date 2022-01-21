@@ -1,5 +1,6 @@
 package analyzers.baseline_analyzer;
 
+import analyzers.readers.InstructionsFileReader;
 import org.jetbrains.annotations.NotNull;
 
 import java.math.BigInteger;
@@ -113,7 +114,8 @@ public class LoopInstance {
         Set<BigInteger> pendingWrites = new HashSet<>();
         for (BigInteger keyAddr : innerHistoryTable.getKeySet()) {
             if (!isKilled(keyAddr)) {
-                if (!innerHistoryTable.containsAccessType(keyAddr, MemoryAccess.READ) && !this.pendingPointTable.containsAccessType(keyAddr, MemoryAccess.READ)) {
+                if (!innerHistoryTable.containsAccessType(keyAddr, MemoryAccess.READ) && !this.pendingPointTable.containsAccessType(keyAddr, MemoryAccess.READ)
+                        && innerHistoryTable.containsAccessType(keyAddr, MemoryAccess.WRITE) && this.pendingPointTable.containsAccessType(keyAddr, MemoryAccess.WRITE)) {
                     killedBits.add(keyAddr);
                 }
                 List<TableEntryPC> tempList = innerHistoryTable.getTableEntry(keyAddr);
@@ -162,16 +164,18 @@ public class LoopInstance {
                 }
                 // Iterate through the rest of the TableEntryPC
                 int count = 0;
-                ListIterator<TableEntryPC> listIterator = currListOfEntries.listIterator();
+                Iterator<TableEntryPC> listIterator = currListOfEntries.iterator();
                 TableEntryPC currEntry = listIterator.next();   // First Entry
                 DataDependence currConflict;
                 TableEntryPC nextEntry;
+                System.out.println("The first entry to merge in pending table is for PC" + InstructionsFileReader.toHexString(currEntry.getAddressPC()) + " for approx mem ref address of " + InstructionsFileReader.toHexString(keyAddress) );
                 while (listIterator.hasNext()) {
                     if (count++ == currListOfEntries.size() - 1) continue;
                     nextEntry = listIterator.next();
                     currConflict = DataDependence.getDependence(currEntry.getMemAccessType(), nextEntry.getMemAccessType());
                     if (currConflict != DataDependence.DEPNONE) {
                         LinkedHashSet<PairwiseConflictLevelSummary> set = mapInstructions.get(currConflict);
+                        System.out.println("The next entry to merge in pending table is for PC" + InstructionsFileReader.toHexString(nextEntry.getAddressPC()) + " for approx mem ref address of " + InstructionsFileReader.toHexString(keyAddress) );
                         set.add(new PairwiseConflictLevelSummary(keyAddress,
                                 new PCPair(currEntry.getAddressPC(), currEntry.getMemAccessType()),
                                 new PCPair(nextEntry.getAddressPC(), nextEntry.getMemAccessType()),

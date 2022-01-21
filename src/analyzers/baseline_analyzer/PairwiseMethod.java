@@ -7,6 +7,7 @@ import jdk.jfr.Event;
 
 import java.io.*;
 import java.util.*;
+import java.util.function.Function;
 
 public class PairwiseMethod implements PairwiseMethodInterface {
 
@@ -24,7 +25,8 @@ public class PairwiseMethod implements PairwiseMethodInterface {
         numClosedLoopEnds = 0;
         numTrips = 0;
         // For now, just try with a single file path
-        filePath = "C:\\Users\\siana\\Work\\Year 3\\New Dissertation Part ll\\Static Analysis\\Generated text files\\nasa_int_sort_2_loops_stores_only.txt";
+        //filePath = "C:\\Users\\siana\\Work\\Year 3\\New Dissertation Part ll\\Static Analysis\\Generated text files\\nasa_int_sort_2_loops_stores_only.txt";
+        filePath = "C:\\Users\\siana\\Work\\Year 3\\New Dissertation Part ll\\Static Analysis\\Generated text files\\nasa_another_test.txt";
     }
 
     // The driver program
@@ -36,11 +38,19 @@ public class PairwiseMethod implements PairwiseMethodInterface {
             LoopStack loopStack = new LoopStack();
 
             List<MemBufferBlock> memBufferList = new ArrayList<>();
-            int parityCount = 0;
+            /*if (sc.hasNextLine()) {
+                line = sc.nextLine();
+                MemBufferBlock currMemBuff = InstructionsFileReader.parseTraceFileLine(line);
+                memBufferList.add(currMemBuff);
+            }*/
+
+            Function<MemBufferBlock, Boolean> isLoadOrStoreFun = param -> (param.getEvent() == EventType.STORE || param.getEvent() == EventType.LOAD);
+
             while (sc.hasNextLine()) {
                 line = sc.nextLine();
                 MemBufferBlock currMemBuff = InstructionsFileReader.parseTraceFileLine(line);
-                if (currMemBuff.getEvent() == EventType.STORE || currMemBuff.getEvent() == EventType.LOAD)
+
+                if (isLoadOrStoreFun.apply(currMemBuff))
                     this.numTrips++;
 
                 System.out.println("Current MemBufferBlock with PC address " + InstructionsFileReader.toHexString(currMemBuff.getAddressPC()) +
@@ -60,24 +70,23 @@ public class PairwiseMethod implements PairwiseMethodInterface {
                     );
                 } */
 
-                if (parityCount++ < 2) {
+                if (memBufferList.size() < 2) {
                     memBufferList.add(currMemBuff);
                     //System.out.println("The current list of memory buffers is of size " + memBufferList.size());
                     if (sc.hasNextLine() && memBufferList.size() != 2)
                         continue;
                 }
                 //System.out.println("h The current list of memory buffers is of size " + memBufferList.size());
-
-                loopStack.encounterNewAccess(memBufferList, numTrips);
-
-                String loopStackDepProfilingOutput = loopStack.getOutputTotalStatistics();
-
-                System.out.println(loopStackDepProfilingOutput);
-
+                assert(memBufferList.size() > 0);
+                loopStack.encounterNewAccess(memBufferList, numTrips - (isLoadOrStoreFun.apply(memBufferList.get(memBufferList.size() - 1) ) ? (memBufferList.size() - 1) : 0 ));
 
                 memBufferList.clear();
-                parityCount = 0;
+                memBufferList.add(currMemBuff);
             }
+            if (memBufferList.size() != 0 ) loopStack.encounterNewAccess(memBufferList, numTrips);
+            String loopStackDepProfilingOutput = loopStack.getOutputTotalStatistics();
+
+            System.out.println(loopStackDepProfilingOutput);
 
         } catch (FileNotFoundException fileNotFoundException) {
             System.out.println("The provided file name shortcut or filepath is invalid.");

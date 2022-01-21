@@ -10,7 +10,7 @@ import java.util.stream.Collectors;
 
 public class PointTable implements Table, Cloneable {
 
-    Map<BigInteger, List<TableEntryPC>> table;
+    public Map<BigInteger, List<TableEntryPC>> table;
 
     public PointTable() {
         this.table = new HashMap<>();
@@ -19,11 +19,11 @@ public class PointTable implements Table, Cloneable {
     public PointTable(Map<BigInteger, List<TableEntryPC>> inputTable) { this.table = inputTable; }
 
     public List<TableEntryPC> getTableEntry(BigInteger key) {
-        return cloneListEntry(key);
+        return table.get(key); // cloneListEntry(key);
     }
 
     public List<TableEntryPC> getOrDefault(BigInteger key, List<TableEntryPC> newList) {
-        if (table.containsKey(key)) return cloneListEntry(key);
+        if (table.containsKey(key)) return table.get(key); //cloneListEntry(key);
 
         return newList;
     }
@@ -112,7 +112,8 @@ public class PointTable implements Table, Cloneable {
             while (iteratorPCs.hasNext()) {
                 currEntry = iteratorPCs.next();
                 MemoryAccess currAccType = currEntry.getMemAccessType();
-                if (readOrWrite == currAccType) {
+                System.out.println("Here");
+                if (readOrWrite.equals(currAccType)) {
                     return true;
                 }
             }
@@ -123,10 +124,10 @@ public class PointTable implements Table, Cloneable {
     public void mergeWith(@NotNull PointTable otherTable) {
         for (BigInteger keyAddr : otherTable.getKeySet()) {
             if (!table.containsKey(keyAddr)) {
-                table.put(keyAddr, otherTable.cloneListEntry(keyAddr));
+                table.put(keyAddr, otherTable.getTableEntry(keyAddr));     //cloneListEntry(keyAddr));
             } else {
                 List<TableEntryPC> listEntry = table.get(keyAddr);
-                listEntry.addAll(otherTable.cloneListEntry(keyAddr));
+                listEntry.addAll(otherTable.getTableEntry(keyAddr));     //cloneListEntry(keyAddr));
             }
         }
     }
@@ -140,9 +141,10 @@ public class PointTable implements Table, Cloneable {
     public void clear() {
         // Explicitly clearing the entries of the hash-table, that represents a mapping between the referenced memory addresses
         // and the lists of Table Entry blocks
-        for (BigInteger key : table.keySet()) {
+
+        /*for (BigInteger key : table.keySet()) {
             table.get(key).clear();
-        }
+        }*/
         table.clear();
     }
 

@@ -34,7 +34,7 @@ public class LoopInstanceLevelSummary {
 
     public void incrementIterationState(long numIterationConflicts) {
         totalCountIterations++;
-        countConflictIterations = (numIterationConflicts > 0) ? 1 : 0;
+        countConflictIterations += (numIterationConflicts > 0) ? 1 : 0;
         totalCountDataDependencies += numIterationConflicts;
     }
 
