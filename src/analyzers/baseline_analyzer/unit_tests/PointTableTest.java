@@ -17,6 +17,8 @@ import java.util.stream.Stream;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@DisplayName("PointTable Test")
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class PointTableTest {
 
     PointTable pointTable;

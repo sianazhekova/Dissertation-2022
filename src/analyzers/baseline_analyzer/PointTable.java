@@ -112,7 +112,6 @@ public class PointTable implements Table, Cloneable {
             while (iteratorPCs.hasNext()) {
                 currEntry = iteratorPCs.next();
                 MemoryAccess currAccType = currEntry.getMemAccessType();
-                System.out.println("Here");
                 if (readOrWrite.equals(currAccType)) {
                     return true;
                 }
@@ -147,6 +146,8 @@ public class PointTable implements Table, Cloneable {
         }*/
         table.clear();
     }
+
+    public boolean isPointTableEmpty() { return table.isEmpty(); }
 
     public List<TableEntryPC> cloneListEntry(BigInteger keyAddress) {
         if (!table.containsKey(keyAddress)) return null;

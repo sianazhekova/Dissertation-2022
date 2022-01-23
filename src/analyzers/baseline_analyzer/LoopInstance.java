@@ -2,6 +2,7 @@ package analyzers.baseline_analyzer;
 
 import analyzers.readers.InstructionsFileReader;
 import org.jetbrains.annotations.NotNull;
+import org.junit.jupiter.api.Assertions;
 
 import java.math.BigInteger;
 import java.util.*;
@@ -65,26 +66,22 @@ public class LoopInstance {
             // Report a loop independent dependence
             // TODO: Encapsulate tracking of loop-independent dependencies in a class
             System.out.println("There is a loop-independent dependence for loop ID = "
-                    + loopID + ", for a memory access with an address, "
-                    + memAddress + ", at a PC address = "
-                    + PCAddress + ", for a trip count of "
+                    + InstructionsFileReader.toHexString(loopID) + ", for a memory access with an address, "
+                    + InstructionsFileReader.toHexString( memAddress) + ", at a PC address = "
+                    + InstructionsFileReader.toHexString(PCAddress) + ", for a trip count of "
                     + tripCount
             );
             return;
         }
 
         MemoryAccess accessMode = pcPoint.getPCPair().getMemAccessType();
-        // Store the memory access in the Pending Point Table of the current loop table
+        // Record the new memory access entry by adding it to the Pending Point Table of the current loop iteration
         pendingPointTable.addNewEntryForAddress(memAddress, PCAddress, accessMode, tripCount);
 
         // If the memory access is a Write (so a store) and there have been no Reads for that memory address in the current loop iteration, then it is a killed bit
         if (accessMode == MemoryAccess.WRITE && !pendingPointTable.containsAccessType(memAddress, MemoryAccess.READ)) {
             killedBits.add(memAddress);
         }
-
-        // Record the new memory access entry by adding it to the Pending Point Table of the current loop iteration
-        pendingPointTable.addNewEntryForAddress(memAddress, PCAddress, accessMode, tripCount);
-
     }
 
     public boolean isKilled(@NotNull PointPC memAccessPoint) {
@@ -94,6 +91,12 @@ public class LoopInstance {
     public boolean isKilled(BigInteger memAccessRefAddr) {
         return killedBits.contains(memAccessRefAddr);
     }
+
+    public boolean isKilledBitsSetEmpty() { return killedBits.isEmpty(); }
+
+    public boolean isPendingPointTableEmpty() { return pendingPointTable.isPointTableEmpty(); }
+
+    public boolean isHistoryPointTableEmpty() { return historyPointTable.isPointTableEmpty(); }
 
     public void mergePendingIntoHistory() {
         // At a loop iteration end, merge the Pending Point Table into the History Point Table
@@ -197,6 +200,37 @@ public class LoopInstance {
                 instanceSummary.addLoopIterationConflicts(currInstrList.size(), currInstrList);
             }
         }
+    }
+
+    // A helper util function printing the contents of the point table
+    public void printContentsTable(@NotNull PointTable pointTable) {
+        if (pointTable.isPointTableEmpty()) {
+            System.out.println("The current point table is empty");
+        }
+
+        for (BigInteger keyRefAddress : pointTable.getKeySet()) {
+            System.out.println("The key is 0x" + InstructionsFileReader.toHexString(keyRefAddress));
+            Assertions.assertTrue(pointTable.containsKey(keyRefAddress));
+            Assertions.assertTrue(pointTable.getTableEntry(keyRefAddress).size() != 0);
+            ListIterator<TableEntryPC> iteratorsEntries = pointTable.getTableEntry(keyRefAddress).listIterator();
+            while (iteratorsEntries.hasNext()) {
+                TableEntryPC tableEntry = iteratorsEntries.next();
+                System.out.println("The Table Entry has a PC address of 0x" + InstructionsFileReader.toHexString(tableEntry.getAddressPC())
+                        + ", and has a trip count of " + tableEntry.getTripCount()
+                        + ", and has an access type of " + MemoryAccess.getStringMemAccess(tableEntry.getMemAccessType())
+                        + ", and a frequency of " + tableEntry.getNumOccurrence()
+                );
+            }
+            System.out.println("\n");
+        }
+    }
+
+    public void printPendingPointTable() {
+        printContentsTable(this.pendingPointTable);
+    }
+
+    public void printHistoryPointTable() {
+        printContentsTable(this.historyPointTable);
     }
 
     Map<DataDependence, LoopInstanceLevelSummary> loopTermination() {
