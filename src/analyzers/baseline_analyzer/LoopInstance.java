@@ -118,7 +118,7 @@ public class LoopInstance {
         for (BigInteger keyAddr : innerHistoryTable.getKeySet()) {
             if (!isKilled(keyAddr)) {
                 if (!innerHistoryTable.containsAccessType(keyAddr, MemoryAccess.READ) && !this.pendingPointTable.containsAccessType(keyAddr, MemoryAccess.READ)
-                        && innerHistoryTable.containsAccessType(keyAddr, MemoryAccess.WRITE) && this.pendingPointTable.containsAccessType(keyAddr, MemoryAccess.WRITE)) {
+                        && innerHistoryTable.containsAccessType(keyAddr, MemoryAccess.WRITE) /* && this.pendingPointTable.containsAccessType(keyAddr, MemoryAccess.WRITE) */ ) {
                     killedBits.add(keyAddr);
                 }
                 List<TableEntryPC> tempList = innerHistoryTable.getTableEntry(keyAddr);
@@ -223,6 +223,21 @@ public class LoopInstance {
             }
             System.out.println("\n");
         }
+    }
+
+    public String getStringOfKilledBits() {
+        StringBuilder sb =  new StringBuilder("Printing the killed bits :\n");
+        if (this.killedBits.size() == 0) sb.append("{}");
+        for (BigInteger killedBit : this.killedBits) {
+            sb.append(" { " + InstructionsFileReader.toHexString(killedBit) + " } ");
+        }
+        sb.append("\n");
+        return sb.toString();
+    }
+
+    public void printKilledBits() {
+        String killedBitsString = getStringOfKilledBits();
+        System.out.println(killedBitsString);
     }
 
     public void printPendingPointTable() {
