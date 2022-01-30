@@ -53,7 +53,7 @@ public class PairwiseConflictLevelSummary {
         assert(isAdditive(anotherConflict));
         frequencyCount += anotherConflict.getFrequencyCount();
         approxMemAddressSet.addAll(anotherConflict.getApproxMemAddressSet());
-        setEndTripCount(anotherConflict.getEndTripCount());
+        setEndTripCount(Math.max(this.endTripCount, anotherConflict.getEndTripCount()));
     }
 
     public Set<BigInteger> getApproxMemAddressSet() {

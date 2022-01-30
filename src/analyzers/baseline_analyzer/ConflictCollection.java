@@ -11,13 +11,20 @@ public class ConflictCollection {
     * Encapsulates the aggregation of conflict objects in an array-like structure.
     */
 
-    LinkedHashSet<PairwiseConflictLevelSummary> conflictsCollection;
+    LinkedHashSet<PairwiseConflictLevelSummary> conflictsCollection = null;
 
     public ConflictCollection() {
         conflictsCollection = new LinkedHashSet<>();
     }
 
     public ConflictCollection(LinkedHashSet<PairwiseConflictLevelSummary> existingCollection) {
+        if (conflictsCollection != null || !conflictsCollection.isEmpty())
+            conflictsCollection.addAll(existingCollection);
+        else
+            conflictsCollection = new LinkedHashSet<>(existingCollection);
+    }
+
+    public void addToConflictCollection(LinkedHashSet<PairwiseConflictLevelSummary> existingCollection) {
         conflictsCollection.addAll(existingCollection);
     }
 
@@ -42,6 +49,10 @@ public class ConflictCollection {
 
     public void summariseSummaryCollection(@NotNull ConflictCollection anotherCollection) {
         summariseInstructions(anotherCollection.conflictsCollection);
+    }
+
+    public int getSizeOfCollection() {
+        return conflictsCollection.size();
     }
 
     public String printToString() {
