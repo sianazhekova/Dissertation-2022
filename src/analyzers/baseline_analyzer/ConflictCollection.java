@@ -59,8 +59,11 @@ public class ConflictCollection {
         StringBuilder sb = new StringBuilder();
         int counter = 0;
         for (PairwiseConflictLevelSummary currConflict : conflictsCollection) {
-            if (counter != conflictsCollection.size() - 1)
+            if (counter != conflictsCollection.size() - 1) {
                 sb.append(currConflict.printToString() + "\n");
+            } else {
+                sb.append(currConflict.printToString());
+            }
             counter++;
         }
         return sb.toString();

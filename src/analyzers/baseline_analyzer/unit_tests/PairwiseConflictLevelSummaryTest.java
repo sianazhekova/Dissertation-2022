@@ -15,7 +15,7 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 
-@DisplayName("Pairwise Conflict Level Summary Test")
+@DisplayName("Pairwise Conflict Level Summary Test Class")
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class PairwiseConflictLevelSummaryTest {
 
@@ -34,6 +34,7 @@ public class PairwiseConflictLevelSummaryTest {
     long[] tripCounts1 = LongStream.iterate(0, n -> n+1).limit(testStrRefAddr1.length).toArray();
 
     @BeforeEach
+    @Test
     public void setUpTestInputData() {
         testPCs1 = Arrays.stream(testStrPCs1).map(strEntry -> new BigInteger(strEntry.substring(2), 16)).collect(Collectors.toList());
         testRefAddr1 = Arrays.stream(testStrRefAddr1).map(strEntry -> new BigInteger(strEntry.substring(2), 16)).collect(Collectors.toList());

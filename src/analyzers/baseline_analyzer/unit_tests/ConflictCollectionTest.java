@@ -21,7 +21,7 @@ public class ConflictCollectionTest {
 
     private ConflictCollection conflictCollection;
 
-    private final Logger logger = Logger.getLogger(LoopInstanceTest.class.getName());
+    private final Logger logger = Logger.getLogger(ConflictCollection.class.getName());
 
     List<BigInteger> testPCs1;
     List<BigInteger> testRefAddr1;
@@ -227,10 +227,15 @@ public class ConflictCollectionTest {
         ConflictCollection testCollection = new ConflictCollection();
         testCollection.addToConflictCollection(testSet);
 
-        logger.info("Testing the summarisation of instructions. ");
+        logger.info("Testing the summarisation of instructions with a non-empty member collection of conflicts. ");
         conflictCollection.summariseSummaryCollection(testCollection);
 
-        logger.info("Iterating through and printing the instructions: ");
+        logger.info("Iterating through and printing the instructions (for the non-empty collection of conf;icts case): ");
+        System.out.println(conflictCollection.printToString());
+
+        logger.info("Testing the summarisation of instructions with an empty member collection of conflicts. ");
+        conflictCollection = new ConflictCollection();
+        conflictCollection.summariseSummaryCollection(testCollection);
         System.out.println(conflictCollection.printToString());
     }
 }

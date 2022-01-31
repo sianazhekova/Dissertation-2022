@@ -52,6 +52,10 @@ public class LoopInstanceLevelSummary {
         );
     }
 
+    public long getSizeOfInnerConflictCollection() {
+        return collectionOfConflicts.getSizeOfCollection();
+    }
+
     public long getCountConflictIterations() {
         return countConflictIterations;
     }

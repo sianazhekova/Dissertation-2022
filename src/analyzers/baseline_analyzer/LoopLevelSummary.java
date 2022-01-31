@@ -20,7 +20,7 @@ public class LoopLevelSummary {
     private long totalNumDataConflicts;
     private ConflictCollection conflictCollection;
 
-    LoopLevelSummary() {
+    public LoopLevelSummary() {
         totalNumIterations = 0;
         iterationsWithDependencies = 0;
 
