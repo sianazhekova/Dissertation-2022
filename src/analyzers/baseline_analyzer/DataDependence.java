@@ -38,6 +38,11 @@ public enum DataDependence {
         }
     }
 
+    @Contract(value = " -> new", pure = true)
+    public static DataDependence @NotNull [] getDependenceTypes() {
+        return new DataDependence[]{ DataDependence.RW, DataDependence.WW, DataDependence.WR };
+    }
+
     @Contract("_ -> new")
     public static @NotNull String getStringDepType(@NotNull DataDependence depType) {
         switch (depType) {

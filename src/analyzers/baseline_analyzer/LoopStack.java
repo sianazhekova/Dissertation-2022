@@ -1,5 +1,6 @@
 package analyzers.baseline_analyzer;
 
+import analyzers.baseline_analyzer.unit_tests.PairwiseConflictLevelSummaryTest;
 import analyzers.readers.EventType;
 import analyzers.readers.InstructionsFileReader;
 import analyzers.readers.MemBufferBlock;
@@ -8,6 +9,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.math.BigInteger;
 import java.util.*;
+import java.util.logging.Logger;
 
 public class LoopStack {
 
@@ -15,6 +17,9 @@ public class LoopStack {
     public Map<BigInteger, Map<DataDependence, LoopLevelSummary>> loopDependencies;
     public Set<BigInteger> uniqueLoopIDsCache;
     private boolean throwStackExceptions;
+
+    private final Logger logger = Logger.getLogger(LoopStack.class.getName());
+
 
     public LoopStack(boolean withExceptions) {
         stack = new ArrayDeque<>();
@@ -55,13 +60,14 @@ public class LoopStack {
                 EventType eventAfter = secondBufferBlock.getEvent();
                 BigInteger loopSuccessorID = secondBufferBlock.getAddressPC();
 
-                if (eventAfter == EventType.START && topLoopID == loopSuccessorID) {  // isSeen(loopSuccessorID)
+                if (eventAfter == EventType.START && isSeen(loopSuccessorID)) {  // isSeen(loopSuccessorID)
                     // This means the current loop has another iteration at least so only the loop-iteration-end stage should be invoked
                     endOfLoopIteration(topLoopID);
                     return;
                 }
                 // The END signal at this code point signifies the end of the iteration of the top-most (current) loop instance, as well as its termination
                 endOfLoopIteration(topLoopID);
+                System.out.println("Loop is terminating!!!");
                 loopTermination(topLoopID);
 
             } else {
@@ -130,9 +136,14 @@ public class LoopStack {
             System.out.println("Invalid end of loop iteration with a mismatch of new loop ID = " + newLoopID + " and " + (stack.isEmpty() ? "Empty Stack" : stack.peek().getLoopID()));
             return;
         }
+        logger.info("End of loop iteration");
         // Record Memory Space here
         stack.peek().loopIterationEnd();
         // Record allocated memory space here
+        logger.info("PRINTING THE HISTORY POINT TABLE.");
+        stack.peek().printHistoryPointTable();
+        logger.info("PRINTING THE PENDING POINT TABLE.");
+        stack.peek().printPendingPointTable();
     }
 
     public void loopTermination(BigInteger currLoopID) throws NullLoopInstanceException {
@@ -165,13 +176,12 @@ public class LoopStack {
         }
     }
 
-    // TODO: Implement this after passing the basic unit tests!
     public String getOutputTotalStatistics() {
         if (loopDependencies.size() == 0) return new String("No Loops recorded");
         StringBuilder sb = new StringBuilder();
         for (BigInteger loopID : loopDependencies.keySet()) {
             sb.append(InstructionsFileReader.toHexString(loopID) + " : \n");
-            DataDependence[] dependencies = new DataDependence[]{ DataDependence.RW, DataDependence.WW, DataDependence.WR };
+            DataDependence[] dependencies = DataDependence.getDependenceTypes();
 
             for (DataDependence depType : dependencies) {
                 sb.append(depType.name() + " : \n".indent(2));
@@ -184,7 +194,9 @@ public class LoopStack {
     }
 
     public Deque<LoopInstance> getRefToStack() {
-        return stack; // Ideally, we would want to return a reference to the cloned stack member, but this would incur extra memory at runtime that may impact our measurements of the runtime memory of the loop instance tables
+        // Ideally, we would want to return a reference to the cloned stack member, but this would incur extra memory at runtime
+        // that may impact our measurements of the runtime memory of the loop instance tables
+        return stack;
     }
 
     public boolean isStackEmpty() {

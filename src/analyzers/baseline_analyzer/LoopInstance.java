@@ -171,14 +171,22 @@ public class LoopInstance {
                 TableEntryPC currEntry = listIterator.next();   // First Entry
                 DataDependence currConflict;
                 TableEntryPC nextEntry;
-                System.out.println("The first entry to merge in pending table is for PC" + InstructionsFileReader.toHexString(currEntry.getAddressPC()) + " for approx mem ref address of " + InstructionsFileReader.toHexString(keyAddress) );
+                System.out.println("The first entry to merge in pending table is for PC"
+                        + InstructionsFileReader.toHexString(currEntry.getAddressPC())
+                        + " for approx mem ref address of "
+                        + InstructionsFileReader.toHexString(keyAddress)
+                );
                 while (listIterator.hasNext()) {
                     if (count++ == currListOfEntries.size() - 1) continue;
                     nextEntry = listIterator.next();
                     currConflict = DataDependence.getDependence(currEntry.getMemAccessType(), nextEntry.getMemAccessType());
                     if (currConflict != DataDependence.DEPNONE) {
                         LinkedHashSet<PairwiseConflictLevelSummary> set = mapInstructions.get(currConflict);
-                        System.out.println("The next entry to merge in pending table is for PC" + InstructionsFileReader.toHexString(nextEntry.getAddressPC()) + " for approx mem ref address of " + InstructionsFileReader.toHexString(keyAddress) );
+                        System.out.println("The next entry to merge in pending table is for PC"
+                                + InstructionsFileReader.toHexString(nextEntry.getAddressPC())
+                                + " for approx mem ref address of "
+                                + InstructionsFileReader.toHexString(keyAddress)
+                        );
                         set.add(new PairwiseConflictLevelSummary(keyAddress,
                                 new PCPair(currEntry.getAddressPC(), currEntry.getMemAccessType()),
                                 new PCPair(nextEntry.getAddressPC(), nextEntry.getMemAccessType()),
@@ -195,11 +203,34 @@ public class LoopInstance {
 
         for (DataDependence keyConflictType : mapInstructions.keySet()) {
             LinkedHashSet<PairwiseConflictLevelSummary> currInstrList = mapInstructions.get(keyConflictType);
+            LoopInstanceLevelSummary instanceSummary = summaryDependencies.get(keyConflictType);
             if (currInstrList.size() > 0) {
-                LoopInstanceLevelSummary instanceSummary = summaryDependencies.get(keyConflictType);
-                instanceSummary.addLoopIterationConflicts(currInstrList.size(), currInstrList);
+
+                long aggregateFreqCount = currInstrList.stream()
+                        .map(conflictSummary -> conflictSummary.getFrequencyCount())
+                        .mapToLong(n -> n)
+                        .sum();
+
+                instanceSummary.addLoopIterationConflicts(aggregateFreqCount, currInstrList);
+            } else {
+                instanceSummary = summaryDependencies.get(keyConflictType);
+                instanceSummary.incrementIterationState(0);
             }
         }
+    }
+
+    public String getOutputInstanceStatistics() {
+        Assertions.assertTrue(summaryDependencies.size() > 0);
+        StringBuilder sb = new StringBuilder();
+        DataDependence[] dependencies = DataDependence.getDependenceTypes();
+
+        for (DataDependence depType : dependencies) {
+            sb.append(depType.name() + " : \n".indent(2));
+            sb.append(summaryDependencies.get(depType).printToString());
+        }
+        sb.append("\n");
+
+        return sb.toString();
     }
 
     // A helper util function printing the contents of the point table

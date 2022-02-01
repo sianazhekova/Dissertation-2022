@@ -177,7 +177,6 @@ public class LoopInstanceTest {
             e.printStackTrace();
         }
 
-
         logger.info("Printing the pending point table of the member loop instance (after the inner loop instance's history point table has been merged into its pending point table)");
         this.loopInstance.printPendingPointTable();
 
@@ -189,13 +188,56 @@ public class LoopInstanceTest {
 
     @Test
     void testRecordDataConflicts() {
+        logger.info("Testing the addition of a starting sequence of new memory accesses to the loop instance:");
+        paramAdditionToPendingTable(this.loopInstance, testPCs1, testRefAddr1, dataDeps1, tripCounts1);
+        logger.info("Printing the set of killed bits: ");
+        this.loopInstance.printKilledBits();
 
+        this.loopInstance.loopIterationEnd();
+        System.out.println(loopInstance.getOutputInstanceStatistics());
 
-    }
+        Assertions.assertTrue(loopInstance.isKilledBitsSetEmpty());
+        Assertions.assertTrue(loopInstance.isPendingPointTableEmpty());
 
-    @Test
-    void testLoopIterationEnd() {
+        logger.info("Printing the entries contained in the history point table of the member loop instance after merging it with the point table:");
+        loopInstance.printHistoryPointTable();
+        logger.info("Printing the resultant set of killed bits");
+        loopInstance.printKilledBits();
 
+        logger.info("Testing the addition of a second sequence of new memory accesses to the loop instance:");
+        paramAdditionToPendingTable(this.loopInstance, testPCs2, testRefAddr2, dataDeps2, tripCounts2);
+
+        logger.info("Printing the resultant set of killed bits after the addition of the new pending points:");
+        loopInstance.printKilledBits();
+
+        logger.info("Testing merging of the pending point table into the history point table, for the second time.");
+        loopInstance.loopIterationEnd();
+        System.out.println(loopInstance.getOutputInstanceStatistics());
+
+        Assertions.assertTrue(loopInstance.isKilledBitsSetEmpty());
+        Assertions.assertTrue(loopInstance.isPendingPointTableEmpty());
+
+        logger.info("Printing the entries contained in the history point table after merging it with the pending point table in the second round:");
+        loopInstance.printHistoryPointTable();
+
+        logger.info("Printing the resultant set of killed bits after the merging of the history point table with the pending point table in the second round:");
+        loopInstance.printKilledBits();
+
+        logger.info("Testing the construction of another loop instance (and yielding its resulting pending point table): ");
+        paramAdditionToPendingTable(loopInstance, testPCs3, testRefAddr3, dataDeps3, tripCounts3);
+        loopInstance.printKilledBits();
+
+        logger.info("Testing the merging of the pending point table into the history point table of the inner loop: ");
+        loopInstance.loopIterationEnd();
+        System.out.println(loopInstance.getOutputInstanceStatistics());
+
+        Assertions.assertTrue(loopInstance.isKilledBitsSetEmpty());
+        Assertions.assertTrue(loopInstance.isPendingPointTableEmpty());
+
+        logger.info("Printing the history point table of the inner loop after its pending point table has been merged: ");
+        loopInstance.printHistoryPointTable();
+        logger.info("Printing the set of killed bits: ");
+        loopInstance.printKilledBits();
     }
 
     // TODO: Add an exception tester class

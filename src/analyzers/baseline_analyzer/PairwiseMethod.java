@@ -26,7 +26,7 @@ public class PairwiseMethod implements PairwiseMethodInterface {
         numTrips = 0;
         // For now, just try with a single file path
         //filePath = "C:\\Users\\siana\\Work\\Year 3\\New Dissertation Part ll\\Static Analysis\\Generated text files\\nasa_int_sort_2_loops_stores_only.txt";
-        filePath = "C:\\Users\\siana\\Work\\Year 3\\New Dissertation Part ll\\Static Analysis\\Generated text files\\nasa_another_test.txt";
+        filePath = "C:\\Users\\siana\\Work\\Year 3\\New Dissertation Part ll\\Static Analysis\\Generated text files\\unit_test_3_iterations.txt";
     }
 
     // The driver program
