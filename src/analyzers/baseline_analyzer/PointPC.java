@@ -6,7 +6,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.math.BigInteger;
 
-public class PointPC {
+public class PointPC implements IntervalType {
     public BigInteger refStartAddress;
     public BigInteger endAddress;
 

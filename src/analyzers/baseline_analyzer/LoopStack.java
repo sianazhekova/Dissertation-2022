@@ -5,6 +5,8 @@ import analyzers.readers.EventType;
 import analyzers.readers.InstructionsFileReader;
 import analyzers.readers.MemBufferBlock;
 import java.lang.*;
+
+import analyzers.readers.MemoryTracer;
 import org.jetbrains.annotations.NotNull;
 
 import java.math.BigInteger;
@@ -18,7 +20,11 @@ public class LoopStack {
     public Set<BigInteger> uniqueLoopIDsCache;
     private boolean throwStackExceptions;
 
+    private Date date;
+    private long initialTime;
+
     private final Logger logger = Logger.getLogger(LoopStack.class.getName());
+    public MemoryTracer memoryTracer;
 
 
     public LoopStack(boolean withExceptions) {
@@ -26,6 +32,12 @@ public class LoopStack {
         loopDependencies = new HashMap<>();
         uniqueLoopIDsCache = new HashSet<>();
         throwStackExceptions = withExceptions;
+        memoryTracer = new MemoryTracer();
+
+        date = new Date();
+        initialTime = date.getTime();
+
+        memoryTracer.printMemoryStatistics("At initialisation of Loop Stack");
     }
 
     public LoopStack() {
@@ -33,6 +45,10 @@ public class LoopStack {
         loopDependencies = new HashMap<>();
         uniqueLoopIDsCache = new HashSet<>();
         throwStackExceptions = false;
+        memoryTracer = new MemoryTracer();
+
+        date = new Date();
+        initialTime = date.getTime();
     }
 
     // TODO: Maybe add sanity-checks for input count of loop starts and loop ends
@@ -111,8 +127,12 @@ public class LoopStack {
         PointPC newPoint = new PointPC(refStartAddress, sizeOfAccess, readOrWrite, PCAddress);
         LoopInstance topLoopInstance = stack.peek();
         // Record memory space here
+        memoryTracer.updateMemoryParams();
+        memoryTracer.printMemoryStatistics("Before addition of a new memory access");
         topLoopInstance.addNewMemoryAccess(newPoint, numTrips);
         // Record memory space here
+        memoryTracer.updateMemoryParams();
+        memoryTracer.printMemoryStatistics("After addition of  a new memory access");
     }
 
     public void startOfLoop(BigInteger newLoopID) {
@@ -138,8 +158,13 @@ public class LoopStack {
         }
         logger.info("End of loop iteration");
         // Record Memory Space here
+        memoryTracer.updateMemoryParams();
+        memoryTracer.printMemoryStatistics("Before end of loop iteration");
         stack.peek().loopIterationEnd();
         // Record allocated memory space here
+        memoryTracer.updateMemoryParams();
+        memoryTracer.printMemoryStatistics("After end of loop iteration");
+
         logger.info("PRINTING THE HISTORY POINT TABLE.");
         stack.peek().printHistoryPointTable();
         logger.info("PRINTING THE PENDING POINT TABLE.");
@@ -154,17 +179,25 @@ public class LoopStack {
         }
         System.out.println();
         // Record Memory Space here
+        memoryTracer.updateMemoryParams();
+        memoryTracer.printMemoryStatistics("Before loop termination");
         LoopInstance topLoop = stack.pop();
         if (stack.size() >= 1) {
             LoopInstance secondFromTop = stack.peek();
             // Record Memory Space here
+            memoryTracer.updateMemoryParams();
+            memoryTracer.printMemoryStatistics("Before merge of history table/s into pending table/s");
             secondFromTop.mergeHistoryIntoPending(topLoop);
             // Record Memory Space here
+            memoryTracer.updateMemoryParams();
+            memoryTracer.printMemoryStatistics("After merge of history table/s into pending table/s");
         }
         Map<DataDependence, LoopInstanceLevelSummary> topLoopConflicts = topLoop.getSummaryLoopInstanceDependencies();
         summariseLoopsInStack(currLoopID, topLoopConflicts);
         deleteLoopIDCache(currLoopID);
         // Record Memory Space here
+        memoryTracer.updateMemoryParams();
+        memoryTracer.printMemoryStatistics("After loop termination");
     }
 
     public void summariseLoopsInStack(BigInteger currLoopInstance, @NotNull Map<DataDependence, LoopInstanceLevelSummary> loopInstanceConflicts) {

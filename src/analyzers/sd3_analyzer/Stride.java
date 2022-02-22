@@ -1,10 +1,11 @@
 package analyzers.sd3_analyzer;
 
+import analyzers.baseline_analyzer.IntervalType;
 import analyzers.baseline_analyzer.PCPair;
 
 import java.math.BigInteger;
 
-public class Stride {
+public class Stride implements IntervalType {
 
     private BigInteger low;
     private BigInteger high;
