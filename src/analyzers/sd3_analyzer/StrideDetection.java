@@ -8,28 +8,46 @@ public class StrideDetection {
 
     private StrideDetectionState currentState;
     private BigInteger strideDistance;
-    private BigInteger startPCAddress;
+    private BigInteger startAddress;
     private BigInteger prevPCAddress;
+
+    private boolean isMonotonic;
 
 
     public StrideDetection() {
         strideDistance = BigInteger.ZERO;
-        startPCAddress = BigInteger.ZERO;
+        startAddress = BigInteger.ZERO;
         prevPCAddress = BigInteger.ZERO;
+        isMonotonic = true;
 
         currentState = StrideDetectionState.START;
     }
 
+    /* This constructor takes into account whether the stride detection that will be performed by the FSM is for
+        monotonic (strictly increasing/decreasing) strides only, or whether it extends to the general case - including "irregular" strides such as [10, 14, 18, 14, 18, 22, 18, 22, 26]  */
+    public StrideDetection(boolean monotonicOrGeneral) {
+        new StrideDetection();
+        isMonotonic = monotonicOrGeneral;
+    }
+
     public StrideDetectionState getCurrentState() { return currentState; }
 
+    /* This method return the stride distance that has been "learned" by the FSM. */
     public BigInteger getStrideDistance() { return strideDistance; }
 
-    public BigInteger getStartPCAddress() { return startPCAddress; }
+    /* This method returns the absolute value of the stride distance that has been computed by the FSM. */
+    public BigInteger getAbsStrideDistance() { return strideDistance.abs(); }
+
+    public BigInteger getStartAddress() { return startAddress; }
 
     public BigInteger getPrevPCAddress() { return prevPCAddress; }
 
-    public AccessCollectionType getPointOrStride() {
+    /* Based on the newly added (reference) memory access for a particular PC address and the current state the FSM is in,
+        we determine the state transition and update the class members, accordingly. */
+    public AccessCollectionType getPointOrStride(BigInteger newAccess) {
         AccessCollectionType accessType;
+        updateFSMStateGeneral(newAccess);
+
         switch(currentState) {
             case START:
             case FIRST_OBSERVED:
@@ -46,12 +64,20 @@ public class StrideDetection {
         return accessType;
     }
 
-    public boolean isAPoint() { return getPointOrStride() == AccessCollectionType.POINT; }
+    public boolean isMonotonic() {
+        return isMonotonic;
+    }
 
-    public boolean isAStride() { return getPointOrStride() == AccessCollectionType.STRIDE; }
+    public String detectGeneralOrMonotonic() {
+        return new String(isMonotonic ? "Monotonic Stride Detection" : "General Stride Detection");
+    }
+
+    public boolean isAPoint(BigInteger newAccess) { return getPointOrStride(newAccess) == AccessCollectionType.POINT; }
+
+    public boolean isAStride(BigInteger newAccess) { return getPointOrStride(newAccess) == AccessCollectionType.STRIDE; }
 
     /* Try with both strictly increasing/decreasing sequences per stride as well as non-monotonic ones such as [10, 14, 18, 14, 18, 22, 18, 22, 26].
-       Will evaluate performance of the former against the latter. */
+       TODO: Will evaluate performance of the former against the latter. */
 
     public int updateFSMStateMonotonic(@NotNull BigInteger newAddress) {
         BigInteger addressDiff = newAddress.subtract(prevPCAddress);
@@ -60,12 +86,12 @@ public class StrideDetection {
         if (currentState.equals(StrideDetectionState.START)) {
             /* The system is at the Starting State of the Finite State Machine */
 
-            startPCAddress = newAddress;
+            startAddress = newAddress;
             currentState = StrideDetectionState.FIRST_OBSERVED;
         } else if (currentState.equals(StrideDetectionState.FIRST_OBSERVED)) {
             /* The system is at the First Observed State of the Finite State Machine */
 
-            strideDistance = newAddress.subtract(startPCAddress);
+            strideDistance = newAddress.subtract(startAddress);
             prevPCAddress = newAddress;
             currentState = StrideDetectionState.STRIDE_LEARNED;
         } else if (currentState.equals(StrideDetectionState.STRIDE_LEARNED)) {
@@ -105,19 +131,19 @@ public class StrideDetection {
     }
 
     public int updateFSMStateGeneral(@NotNull BigInteger newAddress) {
-        BigInteger addressDiff = newAddress.subtract(startPCAddress);
+        BigInteger addressDiff = newAddress.subtract(startAddress);
         StrideDetectionState prevState = currentState;
 
         if (currentState.equals(StrideDetectionState.START)) {
             /* The system is at the Starting State of the Finite State Machine */
 
-            startPCAddress = newAddress;
+            startAddress = newAddress;
             currentState = StrideDetectionState.FIRST_OBSERVED;
         } else if (currentState.equals(StrideDetectionState.FIRST_OBSERVED)) {
             /* The system is at the First Observed State of the Finite State Machine */
 
             prevPCAddress = newAddress;
-            strideDistance = newAddress.subtract(startPCAddress);
+            strideDistance = newAddress.subtract(startAddress);
             currentState = StrideDetectionState.STRIDE_LEARNED;
         } else if (currentState.equals(StrideDetectionState.STRIDE_LEARNED)) {
             /* The system is at the Stride Learned State of the Finite State Machine */
@@ -157,9 +183,10 @@ public class StrideDetection {
         return (currentState.getStateID() - prevState.getStateID());
     }
 
+    /* Setting the FSM state to FirstObserved  */
     public void setToFirstObserved(BigInteger observedAddress) {
         currentState = StrideDetectionState.FIRST_OBSERVED;
-        startPCAddress = observedAddress;
+        startAddress = observedAddress;
         prevPCAddress = BigInteger.ZERO;
         strideDistance = BigInteger.ZERO;
     }

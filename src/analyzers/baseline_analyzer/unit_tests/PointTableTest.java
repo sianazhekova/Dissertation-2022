@@ -39,7 +39,7 @@ public class PointTableTest {
     MemoryAccess[] dataDeps2 = new MemoryAccess[]{MemoryAccess.READ, MemoryAccess.READ, MemoryAccess.READ, MemoryAccess.READ, MemoryAccess.WRITE, MemoryAccess.READ };
     long[] tripCounts2 = LongStream.iterate(1000, n -> n+1).limit(testStrRefAddr2.length).toArray();
 
-    public static void printPointTable(PointTable pointTable1) {
+    public static void printPointTable(@NotNull PointTable pointTable1) {
         for (BigInteger keyAddr : pointTable1.getKeySet()) {
             System.out.println("The key is 0x" + InstructionsFileReader.toHexString(keyAddr));
             Assertions.assertTrue(pointTable1.containsKey(keyAddr));

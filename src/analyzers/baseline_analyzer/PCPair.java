@@ -1,5 +1,6 @@
 package analyzers.baseline_analyzer;
 
+import analyzers.readers.InstructionsFileReader;
 import org.jetbrains.annotations.NotNull;
 
 import java.math.BigInteger;
@@ -24,6 +25,10 @@ public class PCPair implements Comparable<PCPair>{
 
     public MemoryAccess getMemAccessType() {
         return readOrWrite;
+    }
+
+    public String getPCPairString() {
+        return String.format(" | PC Address : 0x%s | | Access-Type : %s | ", InstructionsFileReader.toHexString(PC), readOrWrite.toString());
     }
 
     @Override

@@ -21,7 +21,7 @@ public class ConflictCollectionTest {
 
     private ConflictCollection conflictCollection;
 
-    private final Logger logger = Logger.getLogger(ConflictCollection.class.getName());
+    private final Logger logger = Logger.getLogger(ConflictCollectionTest.class.getName());
 
     List<BigInteger> testPCs1;
     List<BigInteger> testRefAddr1;
