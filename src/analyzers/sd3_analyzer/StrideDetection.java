@@ -1,5 +1,6 @@
 package analyzers.sd3_analyzer;
 
+import analyzers.readers.InstructionsFileReader;
 import org.jetbrains.annotations.NotNull;
 
 import java.math.BigInteger;
@@ -26,8 +27,12 @@ public class StrideDetection {
     /* This constructor takes into account whether the stride detection that will be performed by the FSM is for
         monotonic (strictly increasing/decreasing) strides only, or whether it extends to the general case - including "irregular" strides such as [10, 14, 18, 14, 18, 22, 18, 22, 26]  */
     public StrideDetection(boolean monotonicOrGeneral) {
-        new StrideDetection();
+        strideDistance = BigInteger.ZERO;
+        startAddress = BigInteger.ZERO;
+        prevPCAddress = BigInteger.ZERO;
         isMonotonic = monotonicOrGeneral;
+
+        currentState = StrideDetectionState.START;
     }
 
     public StrideDetectionState getCurrentState() { return currentState; }
@@ -82,6 +87,7 @@ public class StrideDetection {
     public int updateFSMStateMonotonic(@NotNull BigInteger newAddress) {
         BigInteger addressDiff = newAddress.subtract(prevPCAddress);
         StrideDetectionState prevState = currentState;
+        System.out.println("The current address difference is " + addressDiff);
 
         if (currentState.equals(StrideDetectionState.START)) {
             /* The system is at the Starting State of the Finite State Machine */
@@ -98,7 +104,9 @@ public class StrideDetection {
             /* The system is at the Stride Learned State of the Finite State Machine */
 
             if (addressDiff.equals(strideDistance)) {
+                //System.out.println("P1");
                 if (!addressDiff.equals(BigInteger.ZERO)) {
+                    //System.out.println("P2");
                     currentState = StrideDetectionState.WEAK_STRIDE;
                     prevPCAddress = newAddress;
                 }
@@ -131,8 +139,9 @@ public class StrideDetection {
     }
 
     public int updateFSMStateGeneral(@NotNull BigInteger newAddress) {
-        BigInteger addressDiff = newAddress.subtract(startAddress);
+        BigInteger addressDiff = newAddress.subtract(prevPCAddress);
         StrideDetectionState prevState = currentState;
+        System.out.println("The address difference is " + addressDiff);
 
         if (currentState.equals(StrideDetectionState.START)) {
             /* The system is at the Starting State of the Finite State Machine */
@@ -147,9 +156,9 @@ public class StrideDetection {
             currentState = StrideDetectionState.STRIDE_LEARNED;
         } else if (currentState.equals(StrideDetectionState.STRIDE_LEARNED)) {
             /* The system is at the Stride Learned State of the Finite State Machine */
-
-            if (addressDiff.equals(strideDistance)) {
-                if (!addressDiff.equals(BigInteger.ZERO)) {
+            BigInteger absAddressDiff = addressDiff;
+            if (absAddressDiff.mod(strideDistance.abs()).equals(BigInteger.ZERO)) {
+                if (!absAddressDiff.equals(BigInteger.ZERO)) {
                     currentState = StrideDetectionState.WEAK_STRIDE;
                     prevPCAddress = newAddress;
                 }
@@ -158,8 +167,8 @@ public class StrideDetection {
             }
         } else if (currentState.equals(StrideDetectionState.WEAK_STRIDE)) {
             /* The system is at the Weak Stride State of the Finite State Machine */
-
-            if (addressDiff.mod(strideDistance).equals(BigInteger.ZERO) && (addressDiff.divide(strideDistance)).compareTo(BigInteger.ZERO) > -1) {
+            BigInteger absAddressDiff = addressDiff.abs();
+            if (absAddressDiff.mod(strideDistance.abs()).equals(BigInteger.ZERO) && (!absAddressDiff.equals(BigInteger.ZERO))) {
                 /* If the current address can be represented as [ startPCAddress + i * strideDistance ] where i is an integer >= 0 */
                 currentState = StrideDetectionState.STRONG_STRIDE;
             } else {
@@ -169,8 +178,8 @@ public class StrideDetection {
 
         } else if (currentState.equals(StrideDetectionState.STRONG_STRIDE)) {
             /* The system is at the Strong Stride State of the Finite State Machine */
-
-            if (addressDiff.mod(strideDistance).equals(BigInteger.ZERO) && (addressDiff.divide(strideDistance)).compareTo(BigInteger.ZERO) > -1) {
+            BigInteger absAddressDiff = addressDiff.abs();
+            if (absAddressDiff.mod(strideDistance.abs()).equals(BigInteger.ZERO) && (!absAddressDiff.equals(BigInteger.ZERO))) {
                 /* If the current address can be represented as [ startPCAddress + i * strideDistance ] where i is an integer >= 0 */
                 currentState = StrideDetectionState.STRONG_STRIDE;
             } else {
@@ -190,4 +199,17 @@ public class StrideDetection {
         prevPCAddress = BigInteger.ZERO;
         strideDistance = BigInteger.ZERO;
     }
+
+    public String getStringFSMState() {
+
+        return String.format(" | Stride distance: %s | Starting Approx. Reference Address :  %s | Previous Approx. Reference Address : %s | Is Monotonic : %s | Current State : %s | ",
+                strideDistance.toString(10),
+                /*InstructionsFileReader.toHexString(*/startAddress,
+                /*InstructionsFileReader.toHexString(*/prevPCAddress,
+                isMonotonic() ? "YES" : "NO",
+                StrideDetectionState.getStringCollectionAccess(currentState)
+        );
+    }
+
+    public void printFSMState() { System.out.println(getStringFSMState()); }
 }
