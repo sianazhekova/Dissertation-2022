@@ -49,7 +49,7 @@ public class StrideDetectorTest {
         testInputArray1.add(BigInteger.valueOf(1014));
         testInputArray1.add(BigInteger.valueOf(6000));
         testInputArray1.add(BigInteger.valueOf(7000));
-
+        /*  In the stride detector, we have that  */
         testInputArray2 = LongStream.iterate(3000, n -> n - 5).limit(8).mapToObj(i -> BigInteger.valueOf(i)).collect(Collectors.toList());
         testInputArray2.add(BigInteger.valueOf(2970));
     }

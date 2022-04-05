@@ -34,9 +34,21 @@ public class PointPC implements IntervalType {
         return refStartAddress;
     }
 
+    public BigInteger getStartAddress() { return getRefStartAddress(); }
+
     public BigInteger getEndAddress() { return endAddress; }
 
     public PCPair getPCPair() {
         return pcPair;
+    }
+
+    @Override
+    public boolean isAdjacent(IntervalType another) {
+        return false;
+    }
+
+    @Override
+    public boolean hasOverlap(IntervalType another) {
+        return false;
     }
 }

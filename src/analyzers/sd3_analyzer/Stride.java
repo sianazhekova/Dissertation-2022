@@ -13,7 +13,7 @@ public class Stride implements IntervalType {
     private BigInteger high;
     private BigInteger strideDistance;
     private BigInteger sizeOfAccess;
-    private long totalNumAccesses;
+    private BigInteger totalNumAccesses;
     private PCPair PCAndReadWrite;
 
     public Stride() {
@@ -23,11 +23,11 @@ public class Stride implements IntervalType {
         strideDistance = BigInteger.valueOf(0);
         sizeOfAccess = BigInteger.valueOf(0);
 
-        totalNumAccesses = -1;
+        totalNumAccesses = BigInteger.valueOf(0);
         PCAndReadWrite = new PCPair();
     }
 
-    public Stride(BigInteger newLow, @NotNull BigInteger newStrideDistance, BigInteger newSizeOfAccess, Long newTotalNumAccesses, PCPair newPCPair) {
+    public Stride(BigInteger newLow, @NotNull BigInteger newStrideDistance, BigInteger newSizeOfAccess, BigInteger newTotalNumAccesses, PCPair newPCPair) {
         /* ASSERT the stride distance is not zero */
         assert(!newStrideDistance.equals(BigInteger.ZERO));
 
@@ -42,6 +42,7 @@ public class Stride implements IntervalType {
         sizeOfAccess = newSizeOfAccess;
 
         totalNumAccesses = newTotalNumAccesses;
+
         PCAndReadWrite = newPCPair;
 
         low = newLow;
@@ -80,7 +81,7 @@ public class Stride implements IntervalType {
         return " | Lowest Address: 0x" + InstructionsFileReader.toHexString(this.low) + " | " +
                 " | Highest Address: 0x" + InstructionsFileReader.toHexString(this.high) + " | " +
                 " | Stride Distance: " + this.strideDistance.toString(10) + " | " +
-                " | Total Number of Accesses: " + this.totalNumAccesses + " | " +
+                " | Total Number of Accesses: " + this.totalNumAccesses.longValue() + " | " +
                 " | Length of Stride : " + this.sizeOfAccess + " | " +
                 PCAndReadWrite.getPCPairString();
     }
@@ -89,7 +90,7 @@ public class Stride implements IntervalType {
         return " | Lowest Address: " + this.low + " | " +
                 " | Highest Address: " + this.high + " | " +
                 " | Stride Distance: " + this.strideDistance.toString(10) + " | " +
-                " | Total Number of Accesses: " + this.totalNumAccesses + " | " +
+                " | Total Number of Accesses: " + this.totalNumAccesses.longValue() + " | " +
                 " | Length of Stride : " + this.sizeOfAccess + " | " +
                 PCAndReadWrite.getPCPairString();
     }
@@ -118,11 +119,11 @@ public class Stride implements IntervalType {
     }
 
     public void incrementNumAccesses() {
-        totalNumAccesses++;
+        totalNumAccesses.add(BigInteger.ONE);
     }
 
     public void addNumAccesses(long addAccesses) {
-        totalNumAccesses += addAccesses;
+        totalNumAccesses.add(BigInteger.valueOf(addAccesses));
     }
 
     public BigInteger getSecondToLastAddress() {
@@ -131,6 +132,16 @@ public class Stride implements IntervalType {
 
     public BigInteger getLow() {
         return low;
+    }
+
+    @Override
+    public BigInteger getStartAddress() {
+        return getLow();
+    }
+
+    @Override
+    public BigInteger getEndAddress() {
+        return getHigh();
     }
 
     public void setLow(BigInteger low) {
@@ -158,18 +169,32 @@ public class Stride implements IntervalType {
     }
 
     public long getTotalNumAccesses() {
-        return totalNumAccesses;
+        return totalNumAccesses.longValue();
+    }
+
+    public long getNumDistinctAddr() {
+        return sizeOfAccess.longValue();
     }
 
     public void setNumAccesses(long numAccesses) {
-        this.totalNumAccesses = numAccesses;
+        this.totalNumAccesses = BigInteger.valueOf(numAccesses);
     }
 
     public void incrementNumAccesses(long addNumAccesses) {
-        this.totalNumAccesses += addNumAccesses;
+        this.totalNumAccesses.add(BigInteger.valueOf(addNumAccesses));
     }
 
     public PCPair getPCAndReadWrite() {
         return PCAndReadWrite;
+    }
+
+    @Override
+    public boolean isAdjacent(IntervalType another) {
+        return false;
+    }
+
+    @Override
+    public boolean hasOverlap(IntervalType another) {
+        return false;
     }
 }

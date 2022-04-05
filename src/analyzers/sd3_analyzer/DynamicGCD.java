@@ -45,11 +45,11 @@ public class DynamicGCD {
 
     public boolean intervalsOverlap() {
         if ((firstInterval instanceof PointPC && secondInterval instanceof Stride) || (firstInterval instanceof Stride && secondInterval instanceof PointPC)
-        ||  (firstInterval instanceof PointPC && secondInterval instanceof PointPC) ) {
+        ||  (firstInterval instanceof PointPC && secondInterval instanceof PointPC)) {
             BigInteger overlapLength = getTotalOverlapLength();
-            return (overlapLength.equals(BigInteger.ZERO));
+            return (overlapLength.compareTo(BigInteger.ZERO) == 1);
         } else {
-            // The 2 intervals are of type Stride
+            // The 2 intervals are of type Stride -> need to use the interval tree overlap test
             //TODO
             return true;
         }
@@ -80,7 +80,10 @@ public class DynamicGCD {
        otherwise an overflow error may occur when computing old_s * a.
        Code has been adapted from:  http://en.wikipedia.org/wiki/Extended_Euclidean_algorithm
     */
-    public List<BigInteger> extendedEuclid(BigInteger a, BigInteger b) {
+    public static @NotNull List<BigInteger> extendedEuclid(BigInteger a, BigInteger b) {
+        a = a.abs();
+        b = b.abs();
+
         List<BigInteger> solution = new ArrayList<>();
 
         BigInteger s = BigInteger.ZERO;
@@ -101,7 +104,7 @@ public class DynamicGCD {
             temp = s; s = old_s.subtract(quotient.multiply(s)); old_s = temp;
         }
         /* The Bezout's coefficients: (old_s, old_t) */
-        solution.add(old_s); solution.add(old_t);
+        solution.add(old_s); solution.add(old_t); solution.add(old_r);
 
         /* The greatest common divisor: old_r
            The quotients by the gcd: (t, s) */
@@ -109,7 +112,10 @@ public class DynamicGCD {
         return solution;
     }
 
-    public List<BigInteger> extendedEuclidOptimization(BigInteger a, BigInteger b) {
+    public static @NotNull List<BigInteger> extendedEuclidOptimization(BigInteger a, BigInteger b) {
+        a = a.abs();
+        b = b.abs();
+
         List<BigInteger> solution = new ArrayList<>();
         BigInteger s = BigInteger.ZERO;
         BigInteger old_s = BigInteger.ONE;
@@ -136,24 +142,51 @@ public class DynamicGCD {
         /* The greatest common divisor is: old_r */
 
         /* The Bezout coefficients are: (old_s, bezout_t)  */
-        solution.add(old_s); solution.add(bezout_t);
+        solution.add(old_s); solution.add(bezout_t); solution.add(old_r);
 
         return solution;
     }
 
-    public long dynamicGCD() {
-        // Require low1 <= low2. otherwise swap the strides
+    public float dynamicGCD() {
+        // Require low1 <= low2, otherwise swap the strides and the appropriate state
+        if (this.low2.compareTo(this.low1) == -1) {
+            swapState();
+        }
 
-        BigInteger low = low1.min(low2);
+        //BigInteger length = getTotalOverlapLength();
         BigInteger high = high1.min(high2);
-        BigInteger length = getTotalOverlapLength();
+        BigInteger length = high.subtract(low2).add(BigInteger.ONE);
 
         BigInteger strideDistance1 = ((Stride)firstInterval).getStrideDistance();
         BigInteger strideDistance2 = ((Stride)secondInterval).getStrideDistance();
+        System.out.println("The first stride distance is " + strideDistance1 + " and the second stride distance is " + strideDistance2);
 
-        BigInteger delta = strideDistance1.subtract((low.subtract(low1)).mod(strideDistance1)).mod(strideDistance1);
+        // Use StrideIterator to obtain totalStrideAccesses, distinctStrideAccesses
+        BigInteger totalStrideAccesses = BigInteger.valueOf(((Stride) firstInterval).getTotalNumAccesses());
+        BigInteger distinctStrideAccesses = BigInteger.valueOf(((Stride) firstInterval).getNumDistinctAddr());
+        float averageOccurrenceCount = totalStrideAccesses.floatValue()/distinctStrideAccesses.floatValue();
+
+        System.out.println("The total number of accesses (in lower stride 1) is " + totalStrideAccesses +
+                " and the total number of distinct accesses (in lower stride 1) is " + distinctStrideAccesses
+        );
+
+        System.out.println("The average occurrence count is " + averageOccurrenceCount);
+
+        if (low1.equals(low2) && strideDistance1.equals(strideDistance2)) {
+            return ((Stride) firstInterval).getSizeOfAccess().max(BigInteger.ZERO).floatValue() * averageOccurrenceCount;
+
+        }
+
+        BigInteger delta = strideDistance1.subtract( (low2.subtract(low1)).mod(strideDistance1) ).mod(strideDistance1);
+
+        System.out.println("delta is " + delta);
+
         BigInteger GCD = strideDistance1.gcd(strideDistance2);
-        if ( !(GCD.mod(delta)).equals(BigInteger.ZERO)) {
+
+        System.out.println("GCD is " + GCD);
+
+
+        if ( delta.equals(BigInteger.ZERO) || !(GCD.mod(delta)).equals(BigInteger.ZERO)) {
             return 0;
         }
 
@@ -164,23 +197,41 @@ public class DynamicGCD {
         x = bezoutCoefficients.get(0);
         y = bezoutCoefficients.get(1);
 
+        System.out.println("Bezout coefficient y is  " + y);
+
         BigInteger LCM = lcm(strideDistance1, strideDistance2);
+
+        System.out.println("LCM is " + LCM);
+
         BigInteger offset  = ((strideDistance2.multiply(y).multiply(delta).divide(GCD)).add(LCM)).mod(LCM);
+
+        System.out.println("The offset is " + offset);
+
         BigInteger result = (length.subtract(offset.add(BigInteger.ONE)).add(LCM)).divide(LCM);
 
-        // Use StrideIterator to obtain totalStrideAccesses, distinctStrideAccesses
-        BigInteger totalStrideAccesses = BigInteger.ONE;
-        BigInteger distinctStrideAccesses = BigInteger.ONE;
+        System.out.println("The result is " + result);
 
-        BigInteger averageOccurrenceCount = totalStrideAccesses.divide(distinctStrideAccesses);
-
-        return result.max(BigInteger.ZERO).multiply(averageOccurrenceCount).longValue();
-
+        return result.max(BigInteger.ZERO).floatValue() * averageOccurrenceCount;
     }
 
     // Utility Function
     public static @NotNull BigInteger lcm(@NotNull BigInteger bigInt1, BigInteger bigInt2) {
         return bigInt1.multiply(bigInt2).divide(bigInt1.gcd(bigInt2));
+    }
+
+    public void swapState() {
+
+        BigInteger tempLow1 = this.low1;
+        this.low1 = this.low2;
+        this.low2 = tempLow1;
+
+        BigInteger tempHigh1 = this.high1;
+        this.high1 = this.high2;
+        this.high2 = tempHigh1;
+
+        IntervalType tempInterval = firstInterval;
+        firstInterval = secondInterval;
+        secondInterval = tempInterval;
     }
 
     public BigInteger getLow1() {
