@@ -197,4 +197,13 @@ public class Stride implements IntervalType {
     public boolean hasOverlap(IntervalType another) {
         return false;
     }
+
+    @Override
+    public IntervalType copy() {
+        // TODO
+        Stride strideToCopy = new Stride();
+
+        return null;
+    }
+
 }

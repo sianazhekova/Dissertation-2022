@@ -19,6 +19,10 @@ public class PCPair implements Comparable<PCPair>{
         readOrWrite = memoryAccess;
     }
 
+    public boolean isWrite() { return readOrWrite == MemoryAccess.WRITE; }
+
+    public boolean isRead() { return readOrWrite == MemoryAccess.READ; }
+
     public BigInteger getPC() {
         return PC;
     }

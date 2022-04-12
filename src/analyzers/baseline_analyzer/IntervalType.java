@@ -14,11 +14,13 @@ public interface IntervalType extends Comparable<IntervalType> {
        Adapted from: https://stackoverflow.com/questions/16033711/java-iterating-over-every-two-elements-in-a-list  */
 
     default boolean isAdjacent(@NotNull IntervalType another) {
-        return getStartAddress().equals(another.getEndAddress()) || getEndAddress().equals(another.getStartAddress());
+        return getStartAddress().equals(another.getEndAddress().add(BigInteger.ONE)) || getEndAddress().equals(another.getStartAddress().add(BigInteger.ONE));
     }
 
-    default boolean hasOverlap(@NotNull IntervalType another){
-        return getEndAddress().compareTo(another.getStartAddress()) == 1 && another.getEndAddress().compareTo(getStartAddress()) == 1;
+    default boolean hasOverlap(@NotNull IntervalType another) {
+        return ((getEndAddress().compareTo(another.getStartAddress()) == 1 || getEndAddress().compareTo(another.getStartAddress()) == 0 )
+                && ( another.getEndAddress().compareTo(getStartAddress()) == 1 )
+        );
     }
 
     /* Obtaining the length of the interval */
@@ -45,6 +47,8 @@ public interface IntervalType extends Comparable<IntervalType> {
             return 0;
         }
     }
+
+    IntervalType copy();
 
     /* Obtaining the start address of the interval */
     BigInteger getStartAddress();

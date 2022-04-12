@@ -26,7 +26,3 @@ public enum MemoryAccess {
         return dataAccess.toString();
     }
 }
-
-
-
-

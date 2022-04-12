@@ -43,12 +43,13 @@ public class PointPC implements IntervalType {
     }
 
     @Override
-    public boolean isAdjacent(IntervalType another) {
-        return false;
+    public IntervalType copy() {
+        PointPC newPoint = new PointPC(getRefStartAddress(),
+                (getEndAddress().subtract(getRefStartAddress())),
+                pcPair.getMemAccessType(),
+                pcPair.getPC()
+        );
+        return newPoint;
     }
 
-    @Override
-    public boolean hasOverlap(IntervalType another) {
-        return false;
-    }
 }

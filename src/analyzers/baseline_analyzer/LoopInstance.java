@@ -62,6 +62,7 @@ public class LoopInstance {
     public void addNewMemoryAccess(@NotNull PointPC pcPoint, long tripCount) {  // Block block, pc, ...detector
         BigInteger memAddress = pcPoint.getRefStartAddress();
         BigInteger PCAddress = pcPoint.getPCPair().getPC();
+
         if (isKilled(pcPoint)) {
             // Report a loop independent dependence
             // TODO: Encapsulate tracking of loop-independent dependencies in a class
@@ -75,8 +76,10 @@ public class LoopInstance {
         }
 
         MemoryAccess accessMode = pcPoint.getPCPair().getMemAccessType();
+
         // Record the new memory access entry by adding it to the Pending Point Table of the current loop iteration
         pendingPointTable.addNewEntryForAddress(memAddress, PCAddress, accessMode, tripCount);
+        //TODO: pending
 
         // If the memory access is a Write (so a store) and there have been no Reads for that memory address in the current loop iteration, then it is a killed bit
         if (accessMode == MemoryAccess.WRITE && !pendingPointTable.containsAccessType(memAddress, MemoryAccess.READ)) {

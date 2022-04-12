@@ -38,9 +38,11 @@ public class StrideDetection {
     public StrideDetectionState getCurrentState() { return currentState; }
 
     /* This method return the stride distance that has been "learned" by the FSM. */
+
     public BigInteger getStrideDistance() { return strideDistance; }
 
     /* This method returns the absolute value of the stride distance that has been computed by the FSM. */
+
     public BigInteger getAbsStrideDistance() { return strideDistance.abs(); }
 
     public BigInteger getStartAddress() { return startAddress; }
@@ -80,6 +82,17 @@ public class StrideDetection {
     public boolean isAPoint(BigInteger newAccess) { return getPointOrStride(newAccess) == AccessCollectionType.POINT; }
 
     public boolean isAStride(BigInteger newAccess) { return getPointOrStride(newAccess) == AccessCollectionType.STRIDE; }
+
+    public Stride obtainStrideForSearch() {
+        // Create a new stride based on the current state
+        Stride strideToReturn = null;
+
+        if (currentState == StrideDetectionState.WEAK_STRIDE || currentState == StrideDetectionState.STRONG_STRIDE) {
+            strideToReturn = new Stride(startAddress, strideDistance, prevPCAddress.subtract(startAddress).add(BigInteger.ONE), BigInteger.ONE, null);
+        }
+
+        return strideToReturn;
+    }
 
     /* Try with both strictly increasing/decreasing sequences per stride as well as non-monotonic ones such as [10, 14, 18, 14, 18, 22, 18, 22, 26].
        TODO: Will evaluate performance of the former against the latter. */
