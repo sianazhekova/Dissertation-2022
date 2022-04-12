@@ -40,17 +40,6 @@ public class IntervalTree implements Iterable<IntervalTree.IntervalTreeNode> {
     }
 
     /**
-     *
-     * */
-
-    public IntervalTree(IntervalTree treeToCopy) {
-
-
-
-
-    }
-
-    /**
      * (Deep-)Copy the interval tree and return a pointer to the root
      * */
 
@@ -83,13 +72,6 @@ public class IntervalTree implements Iterable<IntervalTree.IntervalTreeNode> {
 
 
         } else return false;
-    }
-
-    public void insertNewAddress(BigInteger newAddress) {
-        // This may not be very accurate (!!!)
-
-
-
     }
 
     /**
@@ -348,7 +330,7 @@ public class IntervalTree implements Iterable<IntervalTree.IntervalTreeNode> {
      * A method outlining the deletion of an interval of addresses to be killed entirely.
      * */
 
-    public boolean killIntervalAddress(IntervalType intToDelete) {
+    public boolean killIntervalAddress(Stride intToDelete) {
 
 
         return true;
@@ -597,6 +579,7 @@ public class IntervalTree implements Iterable<IntervalTree.IntervalTreeNode> {
         //TODO
 
         if (intToSearch instanceof Stride && node.getInterval() instanceof Stride) {
+
 
 
         }
@@ -954,7 +937,6 @@ public class IntervalTree implements Iterable<IntervalTree.IntervalTreeNode> {
             return nil;
         }
     }
-
 
     @Override
     public Iterator<IntervalTreeNode> iterator() {

@@ -32,16 +32,18 @@ public class StrideTable implements Table, Cloneable {
     public void mergeWith() {
 
 
+
     }
 
     public void clear() {
+
 
 
     }
 
     public boolean containsAccessType(BigInteger keyRefAddress, MemoryAccess accessType) {
 
-
+        return false;
     }
 
     public boolean isStrideTableEmpty() { return table.isEmpty(); }
@@ -49,12 +51,14 @@ public class StrideTable implements Table, Cloneable {
     public StrideTable clone() {
         // need interval tree clone
 
+
+
         return null;
     }
 
     public boolean deletePC() {
 
-
+        return false;
     }
 
 

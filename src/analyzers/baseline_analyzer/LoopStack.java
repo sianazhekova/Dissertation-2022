@@ -54,6 +54,7 @@ public class LoopStack {
     // TODO: Maybe add sanity-checks for input count of loop starts and loop ends
     public void encounterNewAccess(@NotNull List<MemBufferBlock> bufferBlockPair, long tripCount) throws InvalidAdditionToEmptyLoopStackException, NullLoopInstanceException {
         assert(bufferBlockPair.size() == 2 || bufferBlockPair.size() == 1);
+
         MemBufferBlock firstBufferBlock = bufferBlockPair.get(0);
         EventType event = firstBufferBlock.getEvent();
         System.out.println("The mem address to be added has a trip count of " + tripCount +  " and corresponds to the address " + InstructionsFileReader.toHexString(firstBufferBlock.getAddressPC()));

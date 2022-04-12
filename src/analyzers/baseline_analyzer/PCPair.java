@@ -49,4 +49,9 @@ public class PCPair implements Comparable<PCPair>{
         return this.PC.equals(otherPair.getPC()) && this.readOrWrite.getIntID() == otherPair.getMemAccessType().getIntID();
     }
 
+    @Override
+    public boolean equals(Object o) {
+        return ((o instanceof PCPair) && this.PC.equals(((PCPair) o).PC) && this.readOrWrite == ((PCPair)o).getMemAccessType() );
+    }
+
 }

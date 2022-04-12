@@ -77,9 +77,17 @@ public class LoopInstance {
 
         MemoryAccess accessMode = pcPoint.getPCPair().getMemAccessType();
 
+        //  if (!strideDetectors.containsKey(pcPoint.getPCAddress() )) {
+        //      strideDetectors.
+        //
+        //  else {
+        //      strideDetectors.updateFSMGeneral( pcPoint.getPCAddress() );
+        //  }
+
         // Record the new memory access entry by adding it to the Pending Point Table of the current loop iteration
         pendingPointTable.addNewEntryForAddress(memAddress, PCAddress, accessMode, tripCount);
-        //TODO: pending
+
+        // }
 
         // If the memory access is a Write (so a store) and there have been no Reads for that memory address in the current loop iteration, then it is a killed bit
         if (accessMode == MemoryAccess.WRITE && !pendingPointTable.containsAccessType(memAddress, MemoryAccess.READ)) {
@@ -142,6 +150,7 @@ public class LoopInstance {
         if (pendingPointTable.getKeySet().size() == 0) return;
 
         Map<DataDependence, LinkedHashSet<PairwiseConflictLevelSummary>> mapInstructions = new HashMap<>();
+
         mapInstructions.put(DataDependence.RW, new LinkedHashSet<>());
         mapInstructions.put(DataDependence.WW, new LinkedHashSet<>());
         mapInstructions.put(DataDependence.WR, new LinkedHashSet<>());

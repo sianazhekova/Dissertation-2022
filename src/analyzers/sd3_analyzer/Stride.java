@@ -203,6 +203,7 @@ public class Stride implements IntervalType {
         // TODO
         Stride strideToCopy = new Stride();
 
+
         return null;
     }
 
