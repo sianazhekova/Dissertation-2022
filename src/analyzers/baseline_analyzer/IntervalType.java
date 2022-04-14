@@ -18,9 +18,7 @@ public interface IntervalType extends Comparable<IntervalType> {
     }
 
     default boolean hasOverlap(@NotNull IntervalType another) {
-        return ((getEndAddress().compareTo(another.getStartAddress()) == 1 || getEndAddress().compareTo(another.getStartAddress()) == 0 )
-                && ( another.getEndAddress().compareTo(getStartAddress()) == 1 )
-        );
+        return ( this.getStartAddress().compareTo(another.getEndAddress()) != 1  &&  another.getStartAddress().compareTo(this.getEndAddress()) != 1 );
     }
 
     /* Obtaining the length of the interval */

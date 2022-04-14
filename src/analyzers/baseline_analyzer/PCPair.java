@@ -54,4 +54,8 @@ public class PCPair implements Comparable<PCPair>{
         return ((o instanceof PCPair) && this.PC.equals(((PCPair) o).PC) && this.readOrWrite == ((PCPair)o).getMemAccessType() );
     }
 
+    public PCPair copy() {
+        return new PCPair(this.getPC(), this.readOrWrite);
+    }
+
 }

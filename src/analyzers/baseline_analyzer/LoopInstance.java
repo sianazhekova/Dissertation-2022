@@ -20,7 +20,7 @@ public class LoopInstance {
     protected BigInteger loopID;
 
 
-    public LoopInstance(BigInteger newLoopID) {
+    public LoopInstance(BigInteger newLoopID /* , boolean includeSD3 */) {
         this.loopID = newLoopID;
         this.numLoopIterations = 0;
         this.numInnerLoops = 0;
@@ -77,18 +77,31 @@ public class LoopInstance {
 
         MemoryAccess accessMode = pcPoint.getPCPair().getMemAccessType();
 
-        //  if (!strideDetectors.containsKey(pcPoint.getPCAddress() )) {
-        //      strideDetectors.
-        //
-        //  else {
-        //      strideDetectors.updateFSMGeneral( pcPoint.getPCAddress() );
-        //  }
+        /*
+        if (!strideDetectors.containsKey( pcPoint.getPCAddress() )) {
+            strideDetectors.put( pcPoint.getPCAddress(), new StrideDetectionState() );
+          } else {
+
+              StrideDetection strideDetector = strideDetectors.get(pcPoint.getPCAddress());
+              if (strideDetector.isAStride() ) {
+
+              }
+
+              strideDetector.updateFSMGeneral( pcPoint.getPCAddress() );
+
+              Stride returnStride = strideDetector.obtainStrideForSearch();
+              assert(returnStride != null);
+              returnStride.setPCPair(pcPoint.getPCPair())
+
+          }
+            if (isAPoint()) {   */
 
         // Record the new memory access entry by adding it to the Pending Point Table of the current loop iteration
         pendingPointTable.addNewEntryForAddress(memAddress, PCAddress, accessMode, tripCount);
 
-        // }
-
+        // } else {
+        //
+        //
         // If the memory access is a Write (so a store) and there have been no Reads for that memory address in the current loop iteration, then it is a killed bit
         if (accessMode == MemoryAccess.WRITE && !pendingPointTable.containsAccessType(memAddress, MemoryAccess.READ)) {
             killedBits.add(memAddress);
@@ -126,6 +139,7 @@ public class LoopInstance {
         // TODO : Change that so that it does not need an external reference to the other loop's History Table
         PointTable innerHistoryTable = innerLoop.getHistoryPointTable(); // a reference to the History Table of the inner loop
         Set<BigInteger> pendingWrites = new HashSet<>();
+
         for (BigInteger keyAddr : innerHistoryTable.getKeySet()) {
             if (!isKilled(keyAddr)) {
                 if (!innerHistoryTable.containsAccessType(keyAddr, MemoryAccess.READ) && !this.pendingPointTable.containsAccessType(keyAddr, MemoryAccess.READ)
@@ -136,6 +150,8 @@ public class LoopInstance {
                 this.pendingPointTable.mergeAddressLine(keyAddr, tempList);
             }
         }
+
+
         this.killedBits.addAll(pendingWrites);
         this.numInnerLoops++;
     }

@@ -50,6 +50,15 @@ public class Stride implements IntervalType {
         high = low.add(i.multiply(strideDistance));
     }
 
+    public Stride(BigInteger inLow, BigInteger inHigh, BigInteger newStrideDist, BigInteger newSizeOfAccess, BigInteger newTotalNumAccesses, PCPair newPCPair) {
+        low = inLow;
+        high = inHigh;
+        strideDistance = newStrideDist;
+        sizeOfAccess = newSizeOfAccess;
+        totalNumAccesses = newTotalNumAccesses;
+        PCAndReadWrite = newPCPair;
+    }
+
     public boolean addressWithinBlock(@NotNull BigInteger memAddress) {
         boolean isIn = !(memAddress.compareTo(this.low) == -1 || memAddress.compareTo(this.getHigh()) == 1);
 
@@ -189,19 +198,9 @@ public class Stride implements IntervalType {
     }
 
     @Override
-    public boolean isAdjacent(IntervalType another) {
-        return false;
-    }
-
-    @Override
-    public boolean hasOverlap(IntervalType another) {
-        return false;
-    }
-
-    @Override
     public IntervalType copy() {
         // TODO
-        Stride strideToCopy = new Stride();
+        Stride strideToCopy = new Stride(low, strideDistance, high, sizeOfAccess, totalNumAccesses, PCAndReadWrite);
 
 
         return null;

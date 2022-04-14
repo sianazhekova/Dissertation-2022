@@ -21,27 +21,25 @@ public class StrideTable implements Table, Cloneable {
     public void addNewMemoryAccess(PointPC pcPoint, long tripCount) {
 
 
-
     }
 
-    public void mergeWith(StrideTable otherTable) {
-
-
-    }
-
-    public void mergeWith() {
-
+    public void mergeHistoryIntoPending(StrideTable otherTable) {
+        // otherTable is the Pending table
 
 
     }
 
-    public void clear() {
+    public void mergePendingIntoHistory(StrideTable otherTable) {
 
 
 
     }
+
+    public void clear() { table.clear(); }
 
     public boolean containsAccessType(BigInteger keyRefAddress, MemoryAccess accessType) {
+
+
 
         return false;
     }
@@ -52,11 +50,12 @@ public class StrideTable implements Table, Cloneable {
         // need interval tree clone
 
 
-
         return null;
     }
 
     public boolean deletePC() {
+
+
 
         return false;
     }
