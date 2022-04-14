@@ -7,7 +7,9 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.math.BigInteger;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.NoSuchElementException;
 
 /**
@@ -78,20 +80,34 @@ public class IntervalTree implements Iterable<IntervalTree.IntervalTreeNode> {
     /**
      * A method outlining an insertion of a new memory address (in the form of ) into the interval tree. It is based on the read-black tree insertion method.
      * */
-/*
+
     public boolean insertNewAddress(Stride strideLoc, BigInteger newAddress) {
         if (!root.isNil() && root.getInterval() instanceof Stride) {
+            boolean flagDelIn = false;
             IntervalTreeNode matchNode = matchWithStride(strideLoc);
+
             if (!matchNode.isNil()) {
+                if (strideLoc.getStartAddress().compareTo(newAddress) == 1) {
+                    flagDelIn = true;
+                }
 
+                if (flagDelIn) {
+                    delete(matchNode);
+                }
 
+                // Expand the stride
+                Stride matchedNodeStride = ((Stride)matchNode.getInterval());
+                matchedNodeStride.expandStride(newAddress);
+
+                if (flagDelIn) {
+                    insertInterval(matchedNodeStride);
+                }
+                return true;
             }
-
-
-
-        } else return false;
+        }
+        return false;
     }
-*/
+
     /**
      * A method outlining an insertion of an interval into the interval tree. It is based on the read-black tree insertion method.
      * */
@@ -423,11 +439,14 @@ public class IntervalTree implements Iterable<IntervalTree.IntervalTreeNode> {
                     // We have reached strides with a match
                     assert (currNodePtr.getInterval() instanceof Stride);
                     int strideComp = compareStrides((Stride) currNodePtr.getInterval(), strideToMatch);
+                    /*System.out.println(" The current node pointer is " + currNodePtr.testStringOutput() +
+                            "\nThe stride comparison is " + strideComp);*/
                     if (strideComp == 0) {
+                        //System.out.println("HERE");
                         returnNode = currNodePtr;
                         break;
                     } else {
-                        currNodePtr = strideComp == -1 ? currNodePtr.leftChild : currNodePtr.rightChild;
+                        currNodePtr = strideComp == -1 ? currNodePtr.rightChild : currNodePtr.leftChild;
                     }
                 }
             }
@@ -526,7 +545,7 @@ public class IntervalTree implements Iterable<IntervalTree.IntervalTreeNode> {
             currNodePtr = currNodePtr.parent;
         }
 
-        return returnNode;
+        return (returnNode != node) ? returnNode : nil;
     }
 
     /**
@@ -545,6 +564,23 @@ public class IntervalTree implements Iterable<IntervalTree.IntervalTreeNode> {
         return numOverlapNodes;
     }
 
+    /**
+     * Collect the overlapping nodes in the tree with the queried interval
+     * */
+
+    public List<IntervalTreeNode> collectOverlapNodes(IntervalTreeNode node, IntervalType interval) {
+        List<IntervalTreeNode> collectionOverlaps = new ArrayList<>();
+        Iterator<IntervalTreeNode> iter = new NodeLevelIteratorOverlaps(node, interval);
+        while (iter.hasNext()) {
+            collectionOverlaps.add(iter.next());
+        }
+
+        return collectionOverlaps;
+    }
+
+    public List<IntervalTreeNode> collectOverlapNodes(IntervalType interval) {
+        return collectOverlapNodes(this.root, interval);
+    }
 
     /**
      * A node-level iterator that iterates through the nodes that overlap with the
@@ -568,7 +604,7 @@ public class IntervalTree implements Iterable<IntervalTree.IntervalTreeNode> {
 
         @Override
         public @Nullable IntervalTreeNode next() {
-            IntervalTreeNode returnPtr = null;
+            IntervalTreeNode returnPtr = nil;
             if (hasNext()) {
                 returnPtr = nextElement;
                 nextElement = getNextOverlapNode(returnPtr, this.searchInterval);
@@ -628,22 +664,7 @@ public class IntervalTree implements Iterable<IntervalTree.IntervalTreeNode> {
      * Tree-level search for the interval int
      * */
 
-
-
-    /**
-     * TODO
-     *
-
-    public void extendInterval(Stride strideLoc, BigInteger newIntAddress) {
-
-        if (!this.getRoot().isNil() && this.getRoot().getInterval() instanceof Stride) {
-            if ()
-
-        }
-
-    }
-
-    *
+    /*
      * TODO
      * */
 
@@ -815,9 +836,14 @@ public class IntervalTree implements Iterable<IntervalTree.IntervalTreeNode> {
 
         @Override
         public int compareTo(@NotNull IntervalTree.IntervalTreeNode o) {
-            // TODO: interval.compareTo()
+            int intervalComparison = interval.compareTo(o.getInterval());
 
-            return 0;
+            if (intervalComparison == 0) {
+
+                return intervalComparison;
+            } else {
+                return intervalComparison;
+            }
         }
     }
 
