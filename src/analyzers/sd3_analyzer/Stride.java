@@ -6,6 +6,8 @@ import analyzers.readers.InstructionsFileReader;
 import org.jetbrains.annotations.NotNull;
 
 import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Stride implements IntervalType {
 
@@ -86,6 +88,60 @@ public class Stride implements IntervalType {
         incrementNumAccesses();
     }
 
+    public void deflateStride(@NotNull BigInteger removeAddress) {
+        if (removeAddress.equals(getStartAddress())) {
+            this.low = getStartAddress().add(strideDistance);
+            assert(low.compareTo(high) != 1);
+
+            decrementNumAccesses();
+            decrementSizeOfAccesses();
+        } else if (removeAddress.equals(getEndAddress())) {
+            this.high = getEndAddress().subtract(strideDistance);
+            assert(high.compareTo(low) != -1);
+
+            decrementNumAccesses();
+            decrementSizeOfAccesses();
+        } else {
+            decrementNumAccesses();
+        }
+    }
+
+    public List<BigInteger> getCrossSection(Stride otherStride) {
+        // Approximation of stride cross-section
+        ArrayList<BigInteger> list = new ArrayList<>();
+
+        BigInteger otherStart = otherStride.getStartAddress();
+        BigInteger otherEnd = otherStride.getEndAddress();
+
+        BigInteger newStart = this.low.max(otherStart);
+
+        if (!newStart.equals(this.low) && !containsAddressInStride(newStart) ) {
+            newStart  = this.low.add( ((newStart.mod(strideDistance)).subtract(BigInteger.ONE)).multiply(strideDistance) );
+            newStart = this.low.max(newStart);
+        }
+
+        BigInteger newEnd = this.high.min(otherEnd);
+
+        if (!newEnd.equals(this.high) && !containsAddressInStride(newEnd)) {
+            newEnd = this.low.add( ((newStart.mod(strideDistance)).subtract(BigInteger.ONE)).multiply(strideDistance) );
+            newEnd = this.high.min(newEnd);
+        }
+        list.add(0, newStart);
+        list.add(1, newEnd);
+
+        return list;
+    }
+
+    public BigInteger returnNearestAddress(BigInteger inAddress) {
+        assert(addressWithinBlock(inAddress));
+        BigInteger returnAddress;
+
+        BigInteger remainder = inAddress.mod(strideDistance);
+        returnAddress = this.low.add(remainder.multiply(strideDistance));
+
+        return returnAddress;
+    }
+
     public String getStringStrideState() {
         return " | Lowest Address: 0x" + InstructionsFileReader.toHexString(this.low) + " | " +
                 " | Highest Address: 0x" + InstructionsFileReader.toHexString(this.high) + " | " +
@@ -127,12 +183,20 @@ public class Stride implements IntervalType {
         updateSizeOfAccess(BigInteger.ONE);
     }
 
+    public void decrementSizeOfAccesses() {
+        sizeOfAccess = sizeOfAccess.subtract(BigInteger.ONE);
+    }
+
     public void incrementNumAccesses() {
-        totalNumAccesses.add(BigInteger.ONE);
+       totalNumAccesses = totalNumAccesses.add(BigInteger.ONE);
+    }
+
+    public void decrementNumAccesses() {
+        totalNumAccesses = totalNumAccesses.subtract(BigInteger.ONE);
     }
 
     public void addNumAccesses(long addAccesses) {
-        totalNumAccesses.add(BigInteger.valueOf(addAccesses));
+       totalNumAccesses = totalNumAccesses.add(BigInteger.valueOf(addAccesses));
     }
 
     public BigInteger getSecondToLastAddress() {
@@ -190,7 +254,7 @@ public class Stride implements IntervalType {
     }
 
     public void incrementNumAccesses(long addNumAccesses) {
-        this.totalNumAccesses.add(BigInteger.valueOf(addNumAccesses));
+        this.totalNumAccesses = this.totalNumAccesses.add(BigInteger.valueOf(addNumAccesses));
     }
 
     public PCPair getPCAndReadWrite() {
@@ -200,10 +264,9 @@ public class Stride implements IntervalType {
     @Override
     public IntervalType copy() {
         // TODO
-        Stride strideToCopy = new Stride(low, strideDistance, high, sizeOfAccess, totalNumAccesses, PCAndReadWrite);
+        Stride strideToCopy = new Stride(low, high, strideDistance, sizeOfAccess, totalNumAccesses, PCAndReadWrite);
 
-
-        return null;
+        return strideToCopy;
     }
 
 }

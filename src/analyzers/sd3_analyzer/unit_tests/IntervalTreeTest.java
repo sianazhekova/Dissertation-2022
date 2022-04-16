@@ -91,7 +91,7 @@ public class IntervalTreeTest {
     }
 
     void initialiseTreeHelper1() {
-        intervalTree.insertInterval(new Stride( BigInteger.valueOf(4), BigInteger.valueOf(10), BigInteger.TWO, BigInteger.valueOf(4), BigInteger.valueOf(4), new PCPair(BigInteger.valueOf(100), MemoryAccess.WRITE) ));
+        //intervalTree.insertInterval(new Stride( BigInteger.valueOf(4), BigInteger.valueOf(10), BigInteger.TWO, BigInteger.valueOf(4), BigInteger.valueOf(4), new PCPair(BigInteger.valueOf(100), MemoryAccess.WRITE) ));
         intervalTree.insertInterval(new Stride( BigInteger.valueOf(5), BigInteger.valueOf(6), BigInteger.ONE, BigInteger.valueOf(2), BigInteger.valueOf(2), new PCPair(BigInteger.valueOf(50), MemoryAccess.WRITE) ));
         intervalTree.insertInterval(new Stride( BigInteger.valueOf(3), BigInteger.valueOf(5), BigInteger.TWO, BigInteger.valueOf(6), BigInteger.valueOf(3), new PCPair(BigInteger.valueOf(100), MemoryAccess.WRITE) ));
         intervalTree.insertInterval(new Stride( BigInteger.valueOf(7), BigInteger.valueOf(7), BigInteger.ONE, BigInteger.valueOf(2), BigInteger.valueOf(2), new PCPair(BigInteger.valueOf(10), MemoryAccess.READ) ));
@@ -111,7 +111,7 @@ public class IntervalTreeTest {
         );
 
         List<IntervalTree.IntervalTreeNode> testCollection = intervalTree.collectOverlapNodes(intervalTree.getRoot(), new PointPC(BigInteger.valueOf(4),BigInteger.valueOf(0), null));
-        //testCollection.forEach(node -> System.out.println(node.testStringOutput()));
+        testCollection.forEach(node -> System.out.println(node.testStringOutput()));
 
         List<IntervalTree.IntervalTreeNode> testCollection2 = intervalTree.collectOverlapNodes(new PointPC(BigInteger.valueOf(5),BigInteger.valueOf(0), null));
         testCollection2.forEach(node -> System.out.println(node.testStringOutput()));
@@ -158,12 +158,57 @@ public class IntervalTreeTest {
 
     @Test
     void testStrideDeletion() {
+        initialiseTreeHelper1();
+        intervalTree.printTree();
+
+        IntervalTree.IntervalTreeNode matchedNode = intervalTree.matchWithStride(new Stride( BigInteger.valueOf(9), BigInteger.valueOf(20), BigInteger.TWO, BigInteger.valueOf(6), BigInteger.valueOf(3), new PCPair(BigInteger.valueOf(100), MemoryAccess.WRITE)));
+        System.out.println("The matched queried node is " + matchedNode.testStringOutput());
+
+        intervalTree.delete(matchedNode);
+        intervalTree.printTree();
+
+        IntervalTree.IntervalTreeNode matchedNode2 = intervalTree.matchWithStride(new Stride( BigInteger.valueOf(8),
+                BigInteger.valueOf(30),
+                BigInteger.TWO,
+                BigInteger.valueOf(6),
+                BigInteger.valueOf(3),
+                new PCPair(BigInteger.valueOf(100), MemoryAccess.WRITE) )
+        );
+        System.out.println("The matched second queried node is " + matchedNode2.testStringOutput());
+
+        IntervalTree.IntervalTreeNode matchedNode4 =  intervalTree.matchWithStride(new Stride( BigInteger.valueOf(7),
+                BigInteger.valueOf(7),
+                BigInteger.ONE,
+                BigInteger.valueOf(2),
+                BigInteger.valueOf(2),
+                new PCPair(BigInteger.valueOf(10), MemoryAccess.READ))
+        );
+        System.out.println("The matched fourth queried node is " + matchedNode4.testStringOutput());
+
+        //intervalTree.delete(matchedNode2);
+        //intervalTree.printTree();
+
+        System.out.println(((Stride)(intervalTree.getRoot().getRightChild().getLeftChild().getInterval())).getTestStringStrideState());
+
+
+        intervalTree.delete(matchedNode4);
+        intervalTree.printTree();
+
+        intervalTree.delete(matchedNode2);
+        intervalTree.printTree();
+    }
+
+    @Test
+    void testKillAddress() {
+
 
 
     }
 
     @Test
-    void testKillAddress() {
+    void copyTree() {
+        initialiseTreeHelper1();
+        intervalTree.copyTree();
 
 
 
