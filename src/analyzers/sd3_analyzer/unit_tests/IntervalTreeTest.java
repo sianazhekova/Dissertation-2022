@@ -185,8 +185,8 @@ public class IntervalTreeTest {
         );
         System.out.println("The matched fourth queried node is " + matchedNode4.testStringOutput());
 
-        //intervalTree.delete(matchedNode2);
-        //intervalTree.printTree();
+        intervalTree.delete(matchedNode2);
+        intervalTree.printTree();
 
         System.out.println(((Stride)(intervalTree.getRoot().getRightChild().getLeftChild().getInterval())).getTestStringStrideState());
 
@@ -194,8 +194,8 @@ public class IntervalTreeTest {
         intervalTree.delete(matchedNode4);
         intervalTree.printTree();
 
-        intervalTree.delete(matchedNode2);
-        intervalTree.printTree();
+        //intervalTree.delete(matchedNode2);
+        //intervalTree.printTree();
     }
 
     @Test
