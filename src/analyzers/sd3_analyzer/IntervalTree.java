@@ -241,7 +241,7 @@ public class IntervalTree implements Iterable<IntervalTree.IntervalTreeNode> {
     /**
      * A method outlining the deletion of an interval tree node
      * */
-/*
+
     public boolean delete(@NotNull IntervalTreeNode z) {
         if (z.isNil()) return false;
 
@@ -254,18 +254,26 @@ public class IntervalTree implements Iterable<IntervalTree.IntervalTreeNode> {
         if (z.leftChild.isNil()) {
             x = z.rightChild;
             transplantRB(z, z.rightChild);
-            updateMaxUpwards(x);
+            if (!x.isNil())
+                updateMaxUpwards(x);
         } else if (z.rightChild.isNil()) {
             x = z.leftChild;
             transplantRB(z, z.leftChild);
-            updateMaxUpwards(x);
+            if (!x.isNil())
+                updateMaxUpwards(x);
         } else {
+            System.out.println("265 the node z is " + z);
             y = getSmallestNode(z.rightChild);
+            System.out.println("267 the node y is " + y);
+
             isYBlackInitially = y.isBlack();
             x = y.rightChild;
             System.out.println(x.testStringOutput());
-            if (y.parent == z)
+            System.out.println("y's parent is " + y.parent.testStringOutput());
+            if (y.parent == z) {
                 x.parent = y;
+                System.out.println("Here");
+            }
             else {
                 transplantRB(y, y.rightChild);
                 System.out.println(y.rightChild);
@@ -275,16 +283,19 @@ public class IntervalTree implements Iterable<IntervalTree.IntervalTreeNode> {
                 y.rightChild.parent = y;
             }
             transplantRB(z, y);
+            System.out.println("286 : y.leftChild " + y.leftChild);
+            System.out.println("287 : z.leftChild " + z.leftChild);
             y.leftChild = z.leftChild;
             y.leftChild.parent = y;
             y.isBlackNode = z.isBlack();
-            updateMaxUpwards(y);
+            if (!z.isRoot())
+                updateMaxUpwards(y);
         }
         if (isYBlackInitially)
             deleteFixUpRB(x);
 
         return true;
-    }   */
+    }
 
     /*
     public boolean delete(IntervalTreeNode z) {
@@ -336,7 +347,7 @@ public class IntervalTree implements Iterable<IntervalTree.IntervalTreeNode> {
      *  https://github.com/charcuterie/interval-tree/blob/65dc2fc8f754127aa09fba0dff6f43b10ac151cb/src/datastructures/IntervalTree.java#L384
      * */
 
-
+/*
     public boolean delete(IntervalTreeNode z) {
 
         if (z.isNil()) {  // Can't delete the sentinel node.
@@ -393,7 +404,7 @@ public class IntervalTree implements Iterable<IntervalTree.IntervalTreeNode> {
         treeSize--;
         return true;
     }
-
+*/
     private void copyInterval(@NotNull IntervalTreeNode node, @NotNull IntervalTreeNode otherNode) {
         System.out.println("The test String output is : " + otherNode.testStringOutput());
         node.interval = otherNode.getInterval().copy();
@@ -422,7 +433,7 @@ public class IntervalTree implements Iterable<IntervalTree.IntervalTreeNode> {
      * */
 
     private void deleteFixUpRB(@NotNull IntervalTreeNode x) {
-/*
+
         while (!x.isRoot() && x.isBlack()) {
             if (x.isLeftChild()) {
                 IntervalTreeNode w = x.parent.rightChild;  // get the sibling of x -> w
@@ -486,13 +497,13 @@ public class IntervalTree implements Iterable<IntervalTree.IntervalTreeNode> {
                 }
             }
         }
-        x.setToBlack(); */
+        x.setToBlack();
         //nil.parent = nil;
         //IntervalTree.nil.rightChild  = IntervalTree.nil;
         //IntervalTree.nil.leftChild = IntervalTree.nil;
 
         Assertions.assertTrue(nil.isBlackNode);
-
+/*
         while (!x.isRoot() && x.isBlack()) {
             if (x.isLeftChild()) {
                 IntervalTreeNode w = x.parent.rightChild;
@@ -549,7 +560,7 @@ public class IntervalTree implements Iterable<IntervalTree.IntervalTreeNode> {
                 }
             }
         }
-        x.setToBlack();
+        x.setToBlack();  */
     }
 
 
@@ -1098,9 +1109,14 @@ public class IntervalTree implements Iterable<IntervalTree.IntervalTreeNode> {
      * */
 
     private IntervalTreeNode getSmallestNode(IntervalTreeNode node) {
+        System.out.println("The node is " + node);
         IntervalTreeNode currPtr = node;
+
+
         while (!currPtr.leftChild.isNil()) {
             System.out.println("The left child of the current pointer is:  " + currPtr.leftChild.testStringOutput());
+            if (currPtr.leftChild.leftChild == currPtr)
+                break;
             currPtr = currPtr.leftChild;
         }
         return currPtr;
@@ -1326,6 +1342,12 @@ public class IntervalTree implements Iterable<IntervalTree.IntervalTreeNode> {
         intervalTree.insertInterval(new Stride( BigInteger.valueOf(9), BigInteger.valueOf(20), BigInteger.TWO, BigInteger.valueOf(6), BigInteger.valueOf(3), new PCPair(BigInteger.valueOf(100), MemoryAccess.WRITE) ));
         intervalTree.insertInterval(new Stride( BigInteger.valueOf(10), BigInteger.valueOf(20), BigInteger.TWO, BigInteger.valueOf(6), BigInteger.valueOf(3), new PCPair(BigInteger.valueOf(100), MemoryAccess.WRITE) ));
 
+        intervalTree.printTree();
+
+        //System.out.print("The root is :" + intervalTree.getRoot());
+        //System.out.println("The root's right child is" + intervalTree.getRoot().rightChild);
+        //System.out.println("The root's left child is" + intervalTree.getRoot().leftChild);
+
         IntervalTree.IntervalTreeNode matchedNode = intervalTree.matchWithStride(new Stride( BigInteger.valueOf(9), BigInteger.valueOf(20), BigInteger.TWO, BigInteger.valueOf(6), BigInteger.valueOf(3), new PCPair(BigInteger.valueOf(100), MemoryAccess.WRITE)));
         System.out.println("The matched queried node is " + matchedNode.testStringOutput());
         intervalTree.printTree();
@@ -1371,10 +1393,14 @@ public class IntervalTree implements Iterable<IntervalTree.IntervalTreeNode> {
         //intervalTree.nil.isBlackNode = true;
         System.out.print("The root is :" + intervalTree.getRoot());
         System.out.println("The root's right child is" + intervalTree.getRoot().rightChild);
+        System.out.println("The root's left child is" + intervalTree.getRoot().leftChild);
 
         Assertions.assertTrue(intervalTree.nil.isBlack());
 
+        // THIS HAS MESSED UP THE CONNECTIONS OF THE ROOT (?)
         intervalTree.delete(intervalTree.getRoot());
+
+        //intervalTree.printTree();
 
         Assertions.assertTrue(intervalTree.nil.isBlack());
 
@@ -1388,9 +1414,12 @@ public class IntervalTree implements Iterable<IntervalTree.IntervalTreeNode> {
 
         System.out.println("The root is " + intervalTree.getRoot());
         System.out.println("the root right-child is " + intervalTree.getRoot().rightChild);
+        System.out.println("the root left-child is " + intervalTree.getRoot().leftChild);
+        //System.out.println("the root's right-left-grand child is " + intervalTree.getRoot().rightChild.leftChild);
+        //System.out.println("the root's right-right-grand child is " + intervalTree.getRoot().rightChild.rightChild);
         //System.out.println("The successor of the root is " + intervalTree.getSuccessor(intervalTree.getRoot()));
 
-        //intervalTree.printTree();
+        //intervalTree.printTree(); */
         /*
         System.out.println("The new root is " + intervalTree.getRoot());
 
