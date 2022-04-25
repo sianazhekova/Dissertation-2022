@@ -73,7 +73,7 @@ public class StrideTest {
     Stream<DynamicTest> testStrideExpansionV1() {
         logger.info("Test stride expansion version 1");
         logger.info("The initial state of the test stride is: " + testStride1.getStringStrideState());
-        logger.info("Commence addition of addresses form an array stream.");
+        logger.info("Commence addition of addresses from an array stream.");
         testStride1 = new Stride(BigInteger.valueOf(1000), BigInteger.valueOf(4), BigInteger.valueOf(1), BigInteger.valueOf(2), new PCPair(BigInteger.valueOf(123456), MemoryAccess.WRITE));
 
         return accessArray1.stream().map(entry -> {
@@ -89,7 +89,7 @@ public class StrideTest {
     Stream<DynamicTest> testStrideExpansionV2() {
         logger.info("Test stride expansion version 2");
         logger.info("The initial state of the test stride is: " + testStride1.getStringStrideState());
-        logger.info("Commence addition of addresses form an array stream.");
+        logger.info("Commence addition of addresses from an array stream.");
         Stride testStride2 = new Stride(BigInteger.valueOf(1000), BigInteger.valueOf(4), BigInteger.valueOf(2), BigInteger.valueOf(2), new PCPair(BigInteger.valueOf(123456), MemoryAccess.WRITE));
         testStride2.printTestStrideState();
 
@@ -99,6 +99,36 @@ public class StrideTest {
 
             return dynamicTest("For entry " + entry, () -> Assertions.assertTrue(testStride2.containsAddressInStride(entry)));
         });
+    }
+
+    @TestFactory
+    Stream<DynamicTest> testStrideDeflation() {
+        logger.info("Test stride deflation");
+        logger.info("The initial state of the test stride is: " + testStride1.getStringStrideState());
+        logger.info("Commence addition of addresses from an array stream.");
+        Stride testStride2 = new Stride(BigInteger.valueOf(996), BigInteger.valueOf(4), BigInteger.valueOf(100), BigInteger.valueOf(100), new PCPair(BigInteger.valueOf(123456), MemoryAccess.WRITE));
+        testStride2.printTestStrideState();
+
+        return addressesToAdd1.stream().map(entry ->{
+            testStride2.deflateStride(entry);
+            testStride2.printTestStrideState();
+
+            return  dynamicTest("For entry " + entry, () -> Assertions.assertTrue(true));
+        });
+
+    }
+
+    @Test
+    void testStrideMerging() {
+        Stride stride1 = new Stride(BigInteger.valueOf(1000), BigInteger.valueOf(4), BigInteger.valueOf(20), BigInteger.valueOf(10), new PCPair(BigInteger.valueOf(123456), MemoryAccess.WRITE));
+        Stride stride2 = new Stride(BigInteger.valueOf(1040), BigInteger.valueOf(4), BigInteger.valueOf(110), BigInteger.valueOf(300), new PCPair(BigInteger.valueOf(123456), MemoryAccess.WRITE));
+
+        stride1.mergeWithStride(stride2);
+        stride1.printTestStrideState();
+
+        Stride stride3 = new Stride(BigInteger.valueOf(900), BigInteger.valueOf(4), BigInteger.valueOf(100), BigInteger.valueOf(600), new PCPair(BigInteger.valueOf(123456), MemoryAccess.WRITE));
+        stride3.mergeWithStride(stride2);
+        stride3.printTestStrideState();
     }
 
 }

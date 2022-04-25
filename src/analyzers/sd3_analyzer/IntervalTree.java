@@ -7,13 +7,10 @@ import analyzers.baseline_analyzer.PointPC;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.NoSuchElementException;
-
+import java.util.*;
 
 
 /**
@@ -46,7 +43,7 @@ public class IntervalTree implements Iterable<IntervalTree.IntervalTreeNode> {
         root.setToBlack(); // the root is set to be BLACK by default
     }
 
-    public IntervalTree(IntervalTree otherTree) {
+    public IntervalTree(@NotNull IntervalTree otherTree) {
         root = otherTree.root.copyNode();
         //nil = new IntervalTreeNode();
         treeSize = otherTree.treeSize;
@@ -92,16 +89,18 @@ public class IntervalTree implements Iterable<IntervalTree.IntervalTreeNode> {
 
             if (!matchNode.isNil()) {
                 if (strideLoc.getStartAddress().compareTo(newAddress) == 1) {
+                    System.out.println("Here 92");
                     flagDelIn = true;
-                }
-
-                if (flagDelIn) {
-                    delete(matchNode);
                 }
 
                 // Expand the stride
                 Stride matchedNodeStride = ((Stride)matchNode.getInterval());
                 matchedNodeStride.expandStride(newAddress);
+
+                if (flagDelIn) {
+                    delete(matchNode);
+                }
+
 
                 if (flagDelIn) {
                     insertInterval(matchedNodeStride);
@@ -113,19 +112,36 @@ public class IntervalTree implements Iterable<IntervalTree.IntervalTreeNode> {
     }
 
     /**
-     * A method outlining an insertion of an interval into the interval tree. It is based on the read-black tree insertion method.
+     * Check if the interval tree contains the reference address with the specified access type
+     * */
+
+    public boolean containsAccessType(BigInteger keyRefAddress, MemoryAccess accessType) {
+        List<IntervalTreeNode> overlapNodes = this.collectOverlapNodes(new PointPC(keyRefAddress, BigInteger.ZERO, null));
+        for (IntervalTreeNode overlapNode : overlapNodes) {
+            Stride overlapStride = (Stride)overlapNode.getInterval();
+            if (overlapStride.containsAddressInStride(keyRefAddress) && overlapStride.getPCAndReadWrite().getMemAccessType() == accessType) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * A method outlining an insertion of an interval into the interval tree. It is based on the red-black tree insertion method.
      * */
 
     public boolean insertInterval(IntervalType intToInsert) {
         IntervalTreeNode newNode = new IntervalTreeNode(intToInsert);
         IntervalTreeNode y = nil;
         IntervalTreeNode x = root;
+        treeSize++;
 
         while (!x.isNil()) {
             y = x;
-            if (intToInsert.compareTo(x.getInterval()) == -1) {
+
+            if (intToInsert.getStartAddress().compareTo(x.getInterval().getStartAddress()) == -1) {
                 x = x.leftChild;
-            } else if (intToInsert.compareTo(x.getInterval()) == 1) {
+            } else if (intToInsert.getStartAddress().compareTo(x.getInterval().getStartAddress()) == 1) {
                 x = x.rightChild;
             } else {
                 // we have two intervals with the same starting memory address
@@ -145,11 +161,20 @@ public class IntervalTree implements Iterable<IntervalTree.IntervalTreeNode> {
                         // Check the end address and extend stride and merge statistics.
                         // For approximation purposes, set number of distinct addresses to the larger of the two
                         if (((Stride) intToInsert).getPCAndReadWrite().equals(((Stride) xInterval).getPCAndReadWrite())) {
+                            System.out.println("HERE Stride match");
                             BigInteger maxEndAddress = xInterval.getEndAddress().max(intToInsert.getEndAddress());
                             ((Stride) xInterval).updateHighAddress(maxEndAddress);
 
                             ((Stride) xInterval).addNumAccesses(((Stride) intToInsert).getTotalNumAccesses());
                             ((Stride) xInterval).setSizeOfAccess(((Stride) xInterval).getSizeOfAccess().max(((Stride) intToInsert).getSizeOfAccess()));
+
+                            BigInteger xMax = x.getMaxAddress();
+                            x.setMaxAddress(x.getMaxAddress().max(intToInsert.getEndAddress()));
+
+                            if (!xMax.equals(x.getMaxAddress()))
+                                updateMaxUpwards(x);
+
+                            treeSize--;
                             return true;
                         } else {
                             x = ((Stride) intToInsert).getPCAndReadWrite().compareTo(((Stride) xInterval).getPCAndReadWrite()) == -1 ? x.leftChild : x.rightChild;
@@ -306,6 +331,7 @@ public class IntervalTree implements Iterable<IntervalTree.IntervalTreeNode> {
         if (!p.leftChild.isNil() && !p.rightChild.isNil()) {
             IntervalTreeNode s = getSuccessor(p);
             copyInterval(p, s);
+            updateMaxUpwards(p);
             p = s;
         }
 
@@ -316,12 +342,17 @@ public class IntervalTree implements Iterable<IntervalTree.IntervalTreeNode> {
             replacement.parent = p.parent;
             if (p.parent.isNil()) {
                 root = replacement;
-            } else if (p == p.parent.leftChild)
+            } else if (p == p.parent.leftChild) {
                 p.parent.leftChild = replacement;
-            else
+                updateMaxUpwards(replacement);
+            }
+            else {
                 p.parent.rightChild = replacement;
-
+                updateMaxUpwards(replacement);
+            }
             p.leftChild = p.rightChild = p.parent = nil;
+            // updateMaxUpwards(replacement) <- only here
+
 
             if (p.isBlack())
                 deleteFixUpRB(replacement);
@@ -336,6 +367,8 @@ public class IntervalTree implements Iterable<IntervalTree.IntervalTreeNode> {
                     p.parent.leftChild = nil;
                 else if (p == p.parent.rightChild)
                     p.parent.rightChild = nil;
+                //
+                updateMaxUpwards(p.parent);
                 p.parent = nil;
             }
         }
@@ -676,13 +709,16 @@ public class IntervalTree implements Iterable<IntervalTree.IntervalTreeNode> {
     public boolean killAddress(BigInteger killedAddress) {
         PointPC killedPoint = new PointPC(killedAddress, BigInteger.valueOf(0), null);
         List<IntervalTreeNode> overlapCollection = collectOverlapNodes(killedPoint);
+        System.out.println("For killed address " + killedAddress);
 
         for (IntervalTreeNode overlapNode : overlapCollection) {
             if (overlapNode.getInterval() instanceof Stride) {
                 Stride overlappedStride = (Stride)overlapNode.getInterval();
+                System.out.println("The overlapped stride is : " + overlappedStride.getTestStringStrideState());
                 if (overlappedStride.containsAddressInStride(killedAddress)) {
                     // if it is a part of the stride
 
+                    System.out.println("killedAddress.compareTo(overlappedStride.getStartAddress()) = " + killedAddress.compareTo(overlappedStride.getStartAddress()) );
                     if (killedAddress.compareTo(overlappedStride.getStartAddress()) == 0) {
                         // Case 1: the start address of the stride is killed -> delete the stride, update that stride (start address, number of distinct addresses and total number of accesses)
                         //         reinsert that updated stride into the Interval tree
@@ -708,7 +744,8 @@ public class IntervalTree implements Iterable<IntervalTree.IntervalTreeNode> {
                             BigInteger minBound = killedAddress.subtract(overlappedStride.getStrideDistance());
                             BigInteger maxBound = killedAddress.add(overlappedStride.getStrideDistance());
 
-                            BigInteger newStride1SizeOfAccess = (overlappedStride.getEndAddress().subtract(overlappedStride.getStartAddress())).add(BigInteger.ONE);
+                            BigInteger newStride1SizeOfAccess =  (minBound.subtract(overlappedStride.getStartAddress()).divide(overlappedStride.getStrideDistance()).add(BigInteger.ONE));
+
                             Stride strideToInsert1 = new Stride(overlappedStride.getStartAddress(), minBound,
                                     overlappedStride.getStrideDistance(),
                                     newStride1SizeOfAccess,
@@ -716,7 +753,8 @@ public class IntervalTree implements Iterable<IntervalTree.IntervalTreeNode> {
                                     overlappedStride.getPCAndReadWrite()
                             );
 
-                            BigInteger newStride2SizeOfAccess = (overlappedStride.getEndAddress()).subtract(overlappedStride.getStartAddress()).add(BigInteger.ONE);
+                            BigInteger newStride2SizeOfAccess = ((overlappedStride.getEndAddress().subtract(maxBound)).divide(overlappedStride.getStrideDistance()).add(BigInteger.ONE));
+
                             Stride strideToInsert2 = new Stride(maxBound, overlappedStride.getEndAddress(),
                                     overlappedStride.getStrideDistance(),
                                     newStride2SizeOfAccess,
@@ -823,6 +861,7 @@ public class IntervalTree implements Iterable<IntervalTree.IntervalTreeNode> {
         return returnNode;
     }
 
+
     /**
      * Return the node with the smallest starting address of its interval that overlaps with the @param interval-to-search,
      * from the subtree rooted at @param node.
@@ -909,9 +948,10 @@ public class IntervalTree implements Iterable<IntervalTree.IntervalTreeNode> {
 
         while (returnNode.isNil() && !currNodePtr.parent.isNil()) {
             if (currNodePtr.isLeftChild()) {
-                returnNode = currNodePtr.parent.getInterval().hasOverlap(intToSearch) ?  currNodePtr.parent : currNodePtr.rightChild;
+                returnNode = currNodePtr.parent.getInterval().hasOverlap(intToSearch) ?  currNodePtr.parent : getMinOverlapNode(currNodePtr.parent.rightChild, intToSearch);
             }
             currNodePtr = currNodePtr.parent;
+            //System.out.println("Here 954 + " + ((Stride)currNodePtr.getInterval()).getTestStringStrideState());
         }
 
         return (returnNode != node) ? returnNode : nil;
@@ -1029,17 +1069,61 @@ public class IntervalTree implements Iterable<IntervalTree.IntervalTreeNode> {
         } else return searchStrideDist.compareTo(currNodeStrideDist);
     }
 
-    /**
-     * Tree-level search for the interval int
-     * */
-
     /*
-     * TODO
+     * Interval-Tree-level merging
      * */
 
-    public IntervalTree mergeWith(IntervalTree intervalTree) {
+    public void mergeWithHelper(@NotNull IntervalTree intervalTree, boolean withOverlapMerge) {
+        if (intervalTree.getRoot().isNil()) return;
 
-        return null;
+        TreeLevelIterator iter = new TreeLevelIterator(intervalTree.getRoot());
+
+        if (withOverlapMerge) {
+
+            while (iter.hasNext()) {
+               Stride nextStride = (Stride)iter.next().getInterval().copy();
+               System.out.println("THe next stride is ->");
+               nextStride.printTestStrideState();
+               List<IntervalTreeNode> overlaps = collectOverlapNodes(nextStride);
+
+               for (IntervalTreeNode overlapNode : overlaps) {
+                   Stride overlapStride = (Stride)overlapNode.getInterval();
+                   System.out.println("The overlap is : ");
+                   overlapStride.printTestStrideState();
+
+                   int comparison = compareStrides(nextStride, overlapStride);
+                   System.out.println("The comparison is : " + comparison);
+
+                   if (comparison == 0) {
+                       if (nextStride.getStartAddress().compareTo(overlapStride.getStartAddress()) == -1) {
+                           // if the stride to insert has a starting address less than the starting address of the overlapped stride in our interval tree node
+                           // then remove that node, expand its stride and reinsert it.
+                           Stride tempOverlapCopy = (Stride) overlapStride.copy();
+                           this.delete(overlapNode);
+                           tempOverlapCopy.mergeWithStride(nextStride);
+                           System.out.println("The temp overlap copy is : " );
+                           tempOverlapCopy.printTestStrideState();
+
+                           this.insertInterval(tempOverlapCopy);
+
+                       } else {
+                           overlapStride.mergeWithStride(nextStride);
+                           updateMaxUpwards(overlapNode);
+                       }
+                       break;
+                   }
+               }
+            }
+
+        } else {
+            while (iter.hasNext()){
+                this.insertInterval(iter.next().getInterval().copy());
+            }
+        }
+    }
+
+    public void mergeWith(IntervalTree intervalTree) {
+        mergeWithHelper(intervalTree, false);
     }
 
     // Interval-Tree-Node inner class
@@ -1214,12 +1298,11 @@ public class IntervalTree implements Iterable<IntervalTree.IntervalTreeNode> {
      * */
 
     private IntervalTreeNode getSmallestNode(IntervalTreeNode node) {
-        System.out.println("The node is " + node);
         IntervalTreeNode currPtr = node;
 
 
         while (!currPtr.leftChild.isNil()) {
-            System.out.println("The left child of the current pointer is:  " + currPtr.leftChild.testStringOutput());
+            //System.out.println("The left child of the current pointer is:  " + currPtr.leftChild.testStringOutput());
             if (currPtr.leftChild.leftChild == currPtr)
                 break;
             currPtr = currPtr.leftChild;
@@ -1255,11 +1338,11 @@ public class IntervalTree implements Iterable<IntervalTree.IntervalTreeNode> {
 
     private IntervalTreeNode getSuccessor(@NotNull IntervalTreeNode node) {
         // if the right child exists return its leftmost subtree node
-        System.out.println("Here 1075 : " + node.testStringOutput());
+        //System.out.println("Here 1075 : " + node.testStringOutput());
 
         if (!node.rightChild.isNil()) {
-            System.out.println("1078 -> " + (node.rightChild).testStringOutput());
-            System.out.println("1078 -> " + this.getSmallestNode(node.rightChild));
+            //System.out.println("1078 -> " + (node.rightChild).testStringOutput());
+            //System.out.println("1078 -> " + this.getSmallestNode(node.rightChild));
             return this.getSmallestNode(node.rightChild);
         }
         // else go up until you reach the sentinel node
@@ -1308,7 +1391,7 @@ public class IntervalTree implements Iterable<IntervalTree.IntervalTreeNode> {
 
     private void rightRotation(@NotNull IntervalTreeNode node) {
         IntervalTreeNode leftChildNode = node.leftChild;
-        node.leftChild.rightChild = leftChildNode;
+        node.leftChild = leftChildNode.rightChild;
         if (!leftChildNode.rightChild.isNil()) {
             leftChildNode.rightChild.parent = node;
         }
@@ -1321,7 +1404,7 @@ public class IntervalTree implements Iterable<IntervalTree.IntervalTreeNode> {
         } else {
             node.parent.leftChild = leftChildNode;
         }
-        leftChildNode.leftChild = node;
+        leftChildNode.rightChild = node;
         node.parent = leftChildNode;
 
         this.updateMax(node);
@@ -1368,6 +1451,9 @@ public class IntervalTree implements Iterable<IntervalTree.IntervalTreeNode> {
 
         private TreeLevelIterator(IntervalTreeNode node) {
             nextNode = node;
+            while (!nextNode.leftChild.isNil()) {
+                nextNode = nextNode.leftChild;
+            }
         }
 
         @Override
@@ -1466,11 +1552,11 @@ public class IntervalTree implements Iterable<IntervalTree.IntervalTreeNode> {
 
         // TODO : Somewhere here things go wrong
         intervalTree.delete(intervalTree.getRoot());
-        Assertions.assertTrue(intervalTree.nil.isBlack());
-        //intervalTree.printTree();
+        //Assertions.assertTrue(intervalTree.nil.isBlack());
+        intervalTree.printTree();
 
 
-        System.out.print("The root is :" + intervalTree.getRoot());
+        System.out.println("The root is :" + intervalTree.getRoot());
         System.out.println("The root's right child is" + intervalTree.getRoot().rightChild);
         System.out.println("The root's right-right child is" + intervalTree.getRoot().rightChild.rightChild);
         System.out.println("The root's right-left child is" + intervalTree.getRoot().rightChild.leftChild);
@@ -1482,13 +1568,16 @@ public class IntervalTree implements Iterable<IntervalTree.IntervalTreeNode> {
 
 
 
-        //intervalTree.delete(intervalTree.getRoot());
-        //intervalTree.printTree();
+        intervalTree.delete(intervalTree.getRoot());
+        intervalTree.printTree();
         System.out.println("////////////////////////////");
 
-        //intervalTree.delete(intervalTree.getRoot());
-        //intervalTree.printTree();
+        intervalTree.delete(intervalTree.getRoot());
+        intervalTree.printTree();
         System.out.println("////////////////////////////");
+
+        intervalTree.delete(intervalTree.getRoot());
+        intervalTree.printTree();
 
         //System.out.print("The root is :" + intervalTree.getRoot());
         //System.out.println("The root's right child is" + intervalTree.getRoot().rightChild);

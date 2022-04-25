@@ -57,6 +57,9 @@ public class Stride implements IntervalType {
         high = inHigh;
         strideDistance = newStrideDist;
         sizeOfAccess = newSizeOfAccess;
+        BigInteger diff = high.subtract(low);
+        sizeOfAccess = (diff.divide(strideDistance)).add(BigInteger.ONE);
+
         totalNumAccesses = newTotalNumAccesses;
         PCAndReadWrite = newPCPair;
     }
@@ -78,12 +81,12 @@ public class Stride implements IntervalType {
         if (newAddress.compareTo(getLow()) == -1) {
             // memory address to be added is less than the lowest address in the stride
             low = newAddress;
-            incrementSizeOfAccess();
+            updateSizeOfAccess();
 
         } else if (newAddress.compareTo(getHigh()) == 1) {
             // memory address to be added is greater than the highest address in the stride
             high = newAddress;
-            incrementSizeOfAccess();
+            updateHighAddress();
         }
         incrementNumAccesses();
     }
@@ -94,19 +97,28 @@ public class Stride implements IntervalType {
             assert(low.compareTo(high) != 1);
 
             decrementNumAccesses();
-            decrementSizeOfAccesses();
+            updateSizeOfAccess();
         } else if (removeAddress.equals(getEndAddress())) {
             this.high = getEndAddress().subtract(strideDistance);
             assert(high.compareTo(low) != -1);
 
             decrementNumAccesses();
-            decrementSizeOfAccesses();
+            updateSizeOfAccess();
         } else {
             decrementNumAccesses();
         }
     }
 
-    public List<BigInteger> getCrossSection(Stride otherStride) {
+    public void mergeWithStride(@NotNull Stride otherStride) {
+        this.setLow(this.getStartAddress().min(otherStride.getStartAddress()));
+        this.setHigh(this.getEndAddress().max(otherStride.getEndAddress()));
+
+        this.setNumAccesses(this.getTotalNumAccesses() + (otherStride.getTotalNumAccesses()));
+        this.setSizeOfAccess((this.getHigh().subtract(this.getLow()).add(BigInteger.ONE)).divide(this.strideDistance));   // Leave it like that for now
+
+    }
+
+    public List<BigInteger> getCrossSection(@NotNull Stride otherStride) {
         // Approximation of stride cross-section
         ArrayList<BigInteger> list = new ArrayList<>();
 
@@ -175,12 +187,17 @@ public class Stride implements IntervalType {
         high = high.max(low.add(i.multiply(strideDistance)));
     }
 
-    public void updateSizeOfAccess(BigInteger addSize) {
+    public void addNewSizeOfAccess(BigInteger addSize) {
         sizeOfAccess = sizeOfAccess.add(addSize);
     }
 
+    public void updateSizeOfAccess() {
+        BigInteger diff  = this.getEndAddress().subtract(this.getStartAddress());
+        sizeOfAccess = diff.divide(this.strideDistance).add(BigInteger.ONE);
+    }
+
     public void incrementSizeOfAccess() {
-        updateSizeOfAccess(BigInteger.ONE);
+        addNewSizeOfAccess(BigInteger.ONE);
     }
 
     public void decrementSizeOfAccesses() {
@@ -217,16 +234,16 @@ public class Stride implements IntervalType {
         return getHigh();
     }
 
-    public void setLow(BigInteger low) {
-        this.low = low;
+    public void setLow(BigInteger newLow) {
+        this.low = newLow;
     }
 
     public BigInteger getHigh() {
         return high;
     }
 
-    public void setHigh(BigInteger high) {
-        this.high = high;
+    public void setHigh(BigInteger newHigh) {
+        this.high = newHigh;
     }
 
     public BigInteger getStrideDistance() {
