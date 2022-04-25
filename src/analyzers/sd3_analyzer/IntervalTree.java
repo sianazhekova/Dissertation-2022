@@ -709,30 +709,42 @@ public class IntervalTree implements Iterable<IntervalTree.IntervalTreeNode> {
     public boolean killAddress(BigInteger killedAddress) {
         PointPC killedPoint = new PointPC(killedAddress, BigInteger.valueOf(0), null);
         List<IntervalTreeNode> overlapCollection = collectOverlapNodes(killedPoint);
-        System.out.println("For killed address " + killedAddress);
+        //System.out.println("For killed address " + killedAddress);
 
         for (IntervalTreeNode overlapNode : overlapCollection) {
             if (overlapNode.getInterval() instanceof Stride) {
+                if (overlapNode.parent.isNil() && overlapNode.leftChild.isNil() && overlapNode.rightChild.isNil()) {
+                    return killAddress(killedAddress);
+                }
+
                 Stride overlappedStride = (Stride)overlapNode.getInterval();
-                System.out.println("The overlapped stride is : " + overlappedStride.getTestStringStrideState());
+                //System.out.println("The overlapped stride is : " + overlappedStride.getTestStringStrideState());
                 if (overlappedStride.containsAddressInStride(killedAddress)) {
                     // if it is a part of the stride
 
-                    System.out.println("killedAddress.compareTo(overlappedStride.getStartAddress()) = " + killedAddress.compareTo(overlappedStride.getStartAddress()) );
+                    //System.out.println("killedAddress.compareTo(overlappedStride.getStartAddress()) = " + killedAddress.compareTo(overlappedStride.getStartAddress()) );
                     if (killedAddress.compareTo(overlappedStride.getStartAddress()) == 0) {
                         // Case 1: the start address of the stride is killed -> delete the stride, update that stride (start address, number of distinct addresses and total number of accesses)
                         //         reinsert that updated stride into the Interval tree
-                        delete(overlapNode);
-                        if (overlappedStride.getEndAddress().compareTo(overlappedStride.getStartAddress()) == 0)
-                            continue;
 
+                        //System.out.println("Stride deletion 6 : " + overlappedStride.getTestStringStrideState());
+                        //this.printTree();
+                        //System.out.println(((Stride) overlapNode.getInterval()).getTestStringStrideState());
+                        delete(overlapNode);
+                        //this.printTree();
+                        if (overlappedStride.getEndAddress().compareTo(overlappedStride.getStartAddress()) == 0) {
+
+                            continue;
+                        }
                         overlappedStride.deflateStride(killedAddress);
+
                         insertInterval(overlappedStride);
 
                     } else if (killedAddress.compareTo(overlappedStride.getEndAddress()) == 0) {
                         // Case 2: the end address of the stride is killed -> update that stride (start address, number of distinct addresses and total number of accesses)
                         if (overlappedStride.getEndAddress().compareTo(overlappedStride.getStartAddress()) == 0) {
                             delete(overlapNode);
+
                             continue;
                         }
 
@@ -769,6 +781,7 @@ public class IntervalTree implements Iterable<IntervalTree.IntervalTreeNode> {
                     }
                 }
             }
+
         }
 
         return true;

@@ -271,7 +271,20 @@ public class IntervalTreeTest {
         intervalTree.killAddress(BigInteger.valueOf(13));
         System.out.println("Printing the tree after killing address 13");
         intervalTree.printTree();
+        iteratorHelper(intervalTree);
 
+        intervalTree.killAddress(BigInteger.valueOf(6));
+        System.out.println("Printing the tree after killing address 6");
+
+        //intervalTree.delete(intervalTree.matchWithStride(new Stride(BigInteger.valueOf(6), BigInteger.valueOf(6), BigInteger.ONE, BigInteger.valueOf(2), BigInteger.valueOf(2), new PCPair(BigInteger.valueOf(50), MemoryAccess.WRITE))));
+        intervalTree.printTree();
+        iteratorHelper(intervalTree);
+
+        //intervalTree.delete(intervalTree.matchWithStride(new Stride( BigInteger.valueOf(6), BigInteger.valueOf(20), BigInteger.TWO, BigInteger.valueOf(6), BigInteger.valueOf(3), new PCPair(BigInteger.valueOf(100), MemoryAccess.WRITE))));
+        //intervalTree.printTree();
+
+        //intervalTree.insertInterval(new Stride( BigInteger.valueOf(8), BigInteger.valueOf(20), BigInteger.TWO, BigInteger.valueOf(6), BigInteger.valueOf(3), new PCPair(BigInteger.valueOf(100), MemoryAccess.WRITE)));
+        //intervalTree.printTree();
 
 
     }
@@ -480,6 +493,30 @@ public class IntervalTreeTest {
         intervalTree2.delete(intervalTree2.getRoot());
         */
 
+
+    }
+
+    @Test
+    void containsAccessType() {
+        initialiseTreeHelper1();
+        System.out.println("The initial member interval tree");
+        intervalTree.printTree();
+
+        Assertions.assertTrue(intervalTree.containsAccessType(BigInteger.valueOf(7), MemoryAccess.READ));
+        Assertions.assertTrue(intervalTree.containsAccessType(BigInteger.valueOf(9), MemoryAccess.WRITE));
+        Assertions.assertTrue(intervalTree.containsAccessType(BigInteger.valueOf(11), MemoryAccess.WRITE));
+        Assertions.assertTrue(intervalTree.containsAccessType(BigInteger.valueOf(12), MemoryAccess.WRITE));
+        Assertions.assertTrue(intervalTree.containsAccessType(BigInteger.valueOf(5), MemoryAccess.WRITE));
+        Assertions.assertTrue(intervalTree.containsAccessType(BigInteger.valueOf(6), MemoryAccess.WRITE));
+
+        Assertions.assertFalse(intervalTree.containsAccessType(BigInteger.valueOf(6), MemoryAccess.READ));
+        Assertions.assertFalse(intervalTree.containsAccessType(BigInteger.valueOf(5), MemoryAccess.READ));
+
+        Assertions.assertFalse(intervalTree.containsAccessType(BigInteger.valueOf(11), MemoryAccess.READ));
+        Assertions.assertFalse(intervalTree.containsAccessType(BigInteger.valueOf(12), MemoryAccess.READ));
+        Assertions.assertFalse(intervalTree.containsAccessType(BigInteger.valueOf(32), MemoryAccess.WRITE));
+
+        //Assertions.assertTrue(intervalTree.containsAccessType(BigInteger.valueOf(32), MemoryAccess.READ));
 
     }
 

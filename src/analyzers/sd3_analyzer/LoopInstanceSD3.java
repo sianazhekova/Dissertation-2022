@@ -1,4 +1,17 @@
 package analyzers.sd3_analyzer;
 
-public class LoopInstanceSD3 {
+import analyzers.baseline_analyzer.LoopInstance;
+
+import java.math.BigInteger;
+
+public class LoopInstanceSD3 extends LoopInstance {
+
+
+
+    public LoopInstanceSD3(BigInteger newLoopID) {
+        super(newLoopID);
+    }
+
+
+
 }
