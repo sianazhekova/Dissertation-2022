@@ -101,10 +101,10 @@ public class IntervalTree implements Iterable<IntervalTree.IntervalTreeNode> {
                     delete(matchNode);
                 }
 
-
                 if (flagDelIn) {
                     insertInterval(matchedNodeStride);
                 }
+                this.incrementSize();
                 return true;
             }
         }
@@ -323,7 +323,7 @@ public class IntervalTree implements Iterable<IntervalTree.IntervalTreeNode> {
     }  */
 
 
-    public boolean delete(IntervalTreeNode p) {
+    public boolean delete(@NotNull IntervalTreeNode p) {
         if (p.isNil()) return false;
 
         treeSize--;
@@ -641,7 +641,7 @@ public class IntervalTree implements Iterable<IntervalTree.IntervalTreeNode> {
         x.setToBlack();
     }  */
 
-    private void deleteFixUpRB(IntervalTreeNode x) {
+    private void deleteFixUpRB(@NotNull IntervalTreeNode x) {
         while (!x.isRoot()  && x.isBlack()) {
             if (x.isLeftChild()) {
                 IntervalTreeNode sib = x.parent.rightChild;
@@ -1512,7 +1512,7 @@ public class IntervalTree implements Iterable<IntervalTree.IntervalTreeNode> {
         inorderTraversalHelper(root);
     }
 
-    public void printTreeHelper(IntervalTreeNode node, int space) {
+    public void printTreeHelper(@NotNull IntervalTreeNode node, int space) {
         int i;
         //System.out.println();
         if (!node.isNil()) {

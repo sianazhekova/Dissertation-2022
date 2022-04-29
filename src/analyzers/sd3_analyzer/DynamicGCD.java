@@ -112,6 +112,7 @@ public class DynamicGCD {
         return solution;
     }
 
+    // Runtime optimisation
     public static @NotNull List<BigInteger> extendedEuclidOptimization(BigInteger a, BigInteger b) {
         a = a.abs();
         b = b.abs();

@@ -18,9 +18,44 @@ public class StrideTable implements Table, Cloneable {
 
     public StrideTable(Map<BigInteger, IntervalTree> input) { this.table = input; }
 
-    public void addNewMemoryAccess(PointPC pcPoint, long tripCount) {
+    public void addNewMemoryAccess(@NotNull PointPC pcPoint, Stride strideLoc) {
+        BigInteger newPC = pcPoint.getPCPair().getPC();
+        MemoryAccess memAccess = pcPoint.getPCPair().getMemAccessType();
+        BigInteger newRefAddress = pcPoint.getRefStartAddress();
+
+        IntervalTree intTreeInsert = this.table.getOrDefault(newPC, new IntervalTree());
 
 
+    }
+
+    public void insertPair(BigInteger PCKey, Stride strideToInsert) {
+
+
+    }
+
+    public void insertAddress(BigInteger PCKey, BigInteger refAddress,  Stride strideToInsert) {
+
+
+    }
+
+    public void updateStridesAfterKill(BigInteger killedBit) {
+
+        for (BigInteger PCKey : this.table.keySet()) {
+            IntervalTree intTree = returnIntervalTreeForKey(PCKey);
+            if (intTree.getRoot().isNil()) {
+                continue;
+            }
+            intTree.killAddress(killedBit);
+        }
+    }
+
+    public void sanitiseTable() {
+        for (BigInteger PCKey : this.table.keySet()) {
+            IntervalTree intTree = returnIntervalTreeForKey(PCKey);
+            if (intTree.getRoot().isNil()) {
+                deletePC(PCKey);
+            }
+        }
     }
 
     public void mergeHistoryIntoPending(@NotNull StrideTable otherTable) {
@@ -36,6 +71,7 @@ public class StrideTable implements Table, Cloneable {
         // otherTable is the Pending table
         for (BigInteger otherPCKey : otherTable.getKeys()) {
             if (this.table.containsKey(otherPCKey)) {
+                // TODO: Fix this with mergeWithHelper()
                 this.table.get(otherPCKey).mergeWith(otherTable.table.get(otherPCKey));
 
             } else {
@@ -55,6 +91,14 @@ public class StrideTable implements Table, Cloneable {
         return false;
     }
 
+    public IntervalTree returnIntervalTreeForKey(BigInteger PCKey) {
+        if (this.table.containsKey(PCKey)) {
+            return this.table.get(PCKey); //.copyTree()
+        } else {
+            return new IntervalTree();  // returning the T.nil sentinel node
+        }
+    }
+
     public boolean containsAccessType(BigInteger keyRefAddress, MemoryAccess accessType) {
 
         for (BigInteger PCKey : this.table.keySet() ) {
@@ -72,6 +116,7 @@ public class StrideTable implements Table, Cloneable {
 
     public boolean isStrideTableEmpty() { return table.isEmpty(); }
 
+    @Override
     public StrideTable clone() {
         // need interval tree clone
         Map<BigInteger, IntervalTree> newStrideTableCopy = new TreeMap<>();
@@ -93,6 +138,12 @@ public class StrideTable implements Table, Cloneable {
         }
         return false;
     }
+
+    public IntervalTree getTableEntry(BigInteger keyRefAddr) {
+        return this.table.getOrDefault(keyRefAddr, new IntervalTree());
+    }
+
+    public boolean containsKey(BigInteger PCKey) { return this.table.containsKey(PCKey); }
 
     public Set<BigInteger> getKeys() {
         return this.table.keySet();

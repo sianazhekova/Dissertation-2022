@@ -2,6 +2,7 @@ package analyzers.sd3_analyzer;
 
 import analyzers.readers.InstructionsFileReader;
 import org.jetbrains.annotations.NotNull;
+import org.junit.jupiter.api.Assertions;
 
 import java.math.BigInteger;
 
@@ -37,7 +38,7 @@ public class StrideDetection {
 
     public StrideDetectionState getCurrentState() { return currentState; }
 
-    /* This method return the stride distance that has been "learned" by the FSM. */
+    /* This method returns the stride distance that has been "learned" by the FSM. */
 
     public BigInteger getStrideDistance() { return strideDistance; }
 
@@ -51,9 +52,19 @@ public class StrideDetection {
 
     /* Based on the newly added (reference) memory access for a particular PC address and the current state the FSM is in,
         we determine the state transition and update the class members, accordingly. */
-    public AccessCollectionType getPointOrStride(BigInteger newAccess) {
+    public AccessCollectionType getPointOrStrideWithUpdate(BigInteger newAccess) {
+        if (isMonotonic)
+            updateFSMStateMonotonic(newAccess);
+        else
+            updateFSMStateGeneral(newAccess);
+
+        AccessCollectionType accessType = getPointOrStride();
+
+        return accessType;
+    }
+
+    public AccessCollectionType getPointOrStride() {
         AccessCollectionType accessType;
-        updateFSMStateGeneral(newAccess);
 
         switch(currentState) {
             case START:
@@ -76,22 +87,46 @@ public class StrideDetection {
     }
 
     public String detectGeneralOrMonotonic() {
-        return new String(isMonotonic ? "Monotonic Stride Detection" : "General Stride Detection");
+        return isMonotonic ? "Monotonic Stride Detection" : "General Stride Detection";
     }
 
-    public boolean isAPoint(BigInteger newAccess) { return getPointOrStride(newAccess) == AccessCollectionType.POINT; }
+    public boolean isAPoint() { return getPointOrStride() == AccessCollectionType.POINT; }
 
-    public boolean isAStride(BigInteger newAccess) { return getPointOrStride(newAccess) == AccessCollectionType.STRIDE; }
+    public boolean isAStride() { return getPointOrStride() == AccessCollectionType.STRIDE; }
 
     public Stride obtainStrideForSearch() {
         // Create a new stride based on the current state
         Stride strideToReturn = null;
 
         if (currentState == StrideDetectionState.WEAK_STRIDE || currentState == StrideDetectionState.STRONG_STRIDE) {
-            strideToReturn = new Stride(startAddress, strideDistance, prevPCAddress.subtract(startAddress).add(BigInteger.ONE), BigInteger.ONE, null);
+            //strideToReturn = new Stride(startAddress, strideDistance, (prevPCAddress.subtract(startAddress).divide(strideDistance)).add(BigInteger.ONE), BigInteger.ONE, null);
+            strideToReturn = new Stride(startAddress, prevPCAddress, strideDistance, BigInteger.ONE, BigInteger.ONE, null);
         }
 
         return strideToReturn;
+    }
+
+    public BigInteger obtainLearnedStrideDist() {
+        BigInteger strideDistance = BigInteger.ZERO;
+
+        // Only invoke this method when in a STRIDE current state
+        Assertions.assertTrue(currentState == StrideDetectionState.WEAK_STRIDE || currentState == StrideDetectionState.STRONG_STRIDE);
+        if (currentState == StrideDetectionState.WEAK_STRIDE || currentState == StrideDetectionState.STRONG_STRIDE) {
+            strideDistance =strideDistance;
+        }
+
+        return strideDistance;
+    }
+
+    public int updateFSMState(BigInteger newAddress) {
+        int result;
+
+        if (isMonotonic)
+            result = updateFSMStateMonotonic(newAddress);
+        else
+            result = updateFSMStateGeneral(newAddress);
+
+        return result;
     }
 
     /* Try with both strictly increasing/decreasing sequences per stride as well as non-monotonic ones such as [10, 14, 18, 14, 18, 22, 18, 22, 26].
@@ -122,6 +157,7 @@ public class StrideDetection {
                     //System.out.println("P2");
                     currentState = StrideDetectionState.WEAK_STRIDE;
                     prevPCAddress = newAddress;
+                    // startAddress = newAddress;
                 }
             } else {
                 setToFirstObserved(newAddress);
@@ -174,6 +210,7 @@ public class StrideDetection {
                 if (!absAddressDiff.equals(BigInteger.ZERO)) {
                     currentState = StrideDetectionState.WEAK_STRIDE;
                     prevPCAddress = newAddress;
+                    //startAddress = newAddress;
                 }
             } else {
                 setToFirstObserved(newAddress);

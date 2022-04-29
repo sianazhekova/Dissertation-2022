@@ -278,6 +278,8 @@ public class Stride implements IntervalType {
         return PCAndReadWrite;
     }
 
+    public void setPCAndReadWrite(PCPair newPCPair) { this.PCAndReadWrite = newPCPair; }
+
     @Override
     public IntervalType copy() {
         // TODO

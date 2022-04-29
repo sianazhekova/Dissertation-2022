@@ -15,6 +15,7 @@ import org.jetbrains.annotations.NotNull;
 public class PairwiseConflictLevelSummary {
 
     private Set<BigInteger> approxMemAddressSet = new HashSet<>();
+    private boolean remRefSummary; // boolean var denoting whether to remove the Reference Summary or not
     DataDependence typeOfConflict;
     private PCPair prevInstruction;
     private PCPair nextInstruction;
@@ -27,7 +28,23 @@ public class PairwiseConflictLevelSummary {
     }
 
     public PairwiseConflictLevelSummary(BigInteger refAddress, @NotNull PCPair prevInstr, @NotNull PCPair nextInstr, long freqCount, long beginTime, long endTime) {
+        remRefSummary = false;
+
         approxMemAddressSet.add(refAddress);
+        typeOfConflict = DataDependence.getDependence(prevInstr.getMemAccessType(), nextInstr.getMemAccessType());
+        prevInstruction = prevInstr;
+        nextInstruction = nextInstr;
+        frequencyCount = freqCount;
+        beginTripCount = beginTime;
+        endTripCount = endTime;
+    }
+
+    public PairwiseConflictLevelSummary(BigInteger refAddress, @NotNull PCPair prevInstr, @NotNull PCPair nextInstr, long freqCount, long beginTime, long endTime, boolean refSumBool) {
+        remRefSummary = refSumBool;
+
+        if (!remRefSummary)
+            approxMemAddressSet.add(refAddress);
+
         typeOfConflict = DataDependence.getDependence(prevInstr.getMemAccessType(), nextInstr.getMemAccessType());
         prevInstruction = prevInstr;
         nextInstruction = nextInstr;
@@ -52,7 +69,12 @@ public class PairwiseConflictLevelSummary {
     public void addCountsFrom(PairwiseConflictLevelSummary anotherConflict) {
         assert(isAdditive(anotherConflict));
         frequencyCount += anotherConflict.getFrequencyCount();
-        approxMemAddressSet.addAll(anotherConflict.getApproxMemAddressSet());
+
+        if (!this.remRefSummary && !anotherConflict.remRefSummary) {
+            approxMemAddressSet.addAll(anotherConflict.getApproxMemAddressSet());
+        } else {
+            this.remRefSummary = true;
+        }
         setEndTripCount(Math.max(this.endTripCount, anotherConflict.getEndTripCount()));
     }
 
@@ -105,14 +127,26 @@ public class PairwiseConflictLevelSummary {
     }
 
     public String printToString() {
-        return String.format("| RefAddr: %s | | ConflictType: %s | | PCFirst: %s | | PCLast: %s | | FreqCount: %d | | StartTripCount: %d | | LastTripCount : %d |",
-                convertAddressSetToString(approxMemAddressSet),
-                DataDependence.getStringDepType(typeOfConflict),
-                InstructionsFileReader.toHexString(prevInstruction.getPC()),
-                InstructionsFileReader.toHexString(nextInstruction.getPC()),
-                frequencyCount,
-                beginTripCount,
-                endTripCount
-        );
+
+        if (!remRefSummary) {
+            return String.format("| RefAddr: %s | | ConflictType: %s | | PCFirst: %s | | PCLast: %s | | FreqCount: %d | | StartTripCount: %d | | LastTripCount : %d |",
+                    convertAddressSetToString(approxMemAddressSet),
+                    DataDependence.getStringDepType(typeOfConflict),
+                    InstructionsFileReader.toHexString(prevInstruction.getPC()),
+                    InstructionsFileReader.toHexString(nextInstruction.getPC()),
+                    frequencyCount,
+                    beginTripCount,
+                    endTripCount
+            );
+        } else {
+            return String.format("| ConflictType: %s | | PCFirst: %s | | PCLast: %s | | FreqCount: %d | | StartTripCount: %d | | LastTripCount : %d |",
+                    DataDependence.getStringDepType(typeOfConflict),
+                    InstructionsFileReader.toHexString(prevInstruction.getPC()),
+                    InstructionsFileReader.toHexString(nextInstruction.getPC()),
+                    frequencyCount,
+                    beginTripCount,
+                    endTripCount
+            );
+        }
     }
 }

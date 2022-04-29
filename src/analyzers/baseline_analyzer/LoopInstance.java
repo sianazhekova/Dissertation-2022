@@ -157,12 +157,12 @@ public class LoopInstance {
     }
 
     public void loopIterationEnd() {
-        recordLoopDataConflicts();
+        recordPointPointConflicts();
         mergePendingIntoHistory();
         this.numLoopIterations++;
     }
 
-    public void recordLoopDataConflicts() {
+    public void recordPointPointConflicts() {
         if (pendingPointTable.getKeySet().size() == 0) return;
 
         Map<DataDependence, LinkedHashSet<PairwiseConflictLevelSummary>> mapInstructions = new HashMap<>();

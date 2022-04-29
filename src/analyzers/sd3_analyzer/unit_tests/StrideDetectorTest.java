@@ -67,7 +67,7 @@ public class StrideDetectorTest {
     @Test
     void testGetPointOrStride() {
         testInputArray1.forEach(inputAddress -> {
-            System.out.println("The FSM is currently at " + FSMDetectorMonotonic.getPointOrStride(inputAddress).toString());
+            System.out.println("The FSM is currently at " + FSMDetectorMonotonic.getPointOrStrideWithUpdate(inputAddress).toString());
             FSMDetectorMonotonic.printFSMState();
         });
     }
